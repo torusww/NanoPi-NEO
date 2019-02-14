@@ -28,9 +28,9 @@ Ubuntu + mpd:
 
 Volumio(Debian):
 
-	apt install libcv-dev libopencv-dev opencv-doc fonts-takao-gothic libtag1-dev
+	apt install libcv-dev libopencv-dev opencv-doc fonts-takao-gothic libtag1-dev libcurl4-openssl-dev
 
-	g++ -O3 -pthread -std=c++11 -DVOLUMIO=1 mpd_gui.cpp -o mpd_gui.cpp.o `pkg-config --cflags opencv` `pkg-config --libs opencv` `freetype-config --cflags` `freetype-config --libs` `taglib-config --cflags` `taglib-config --libs`
+	g++ -Ofast -mfpu=neon -pthread -std=c++11 -DVOLUMIO=1 mpd_gui.cpp json11.cpp -o mpd_gui.cpp.o `pkg-config --cflags opencv` `pkg-config --libs opencv` `freetype-config --cflags` `freetype-config --libs` `taglib-config --cflags` `taglib-config --libs` -lcurl
 
 */
 
@@ -55,7 +55,6 @@ Volumio(Debian):
 #include "common/perf_log.h"
 #include "common/img_font.h"
 #include "common/ctrl_socket.h"
-#include "common/ctrl_http.h"
 #include "common/string_util.h"
 #include "common/ctrl_socket.h"
 #include "CoverArtExtractor.h"
@@ -67,12 +66,14 @@ Volumio(Debian):
 #endif
 
 #ifndef VOLUMIO
-#define	VOLUMIO					0
+#define	VOLUMIO				0
 #endif
 
 
 #if VOLUMIO
 #define	MUSIC_ROOT_PATH		"/mnt/"
+#include "common/ctrl_http_curl.h"
+#include "json11.hpp"
 #else
 #define	MUSIC_ROOT_PATH		"/media/"
 #endif
@@ -87,7 +88,9 @@ Volumio(Debian):
 
 #define	VOLUMIO_HOST		"127.0.0.1"
 #define VOLUMIO_PORT		3000
-
+#define VOLUMIO_IMGPORT		3001
+#define POLLING_TIME_MS		250
+#define REFRESH_TIME_MS		50
 
 
 class MusicController
@@ -117,31 +120,8 @@ public:
 	static	void	PlayPause()
 	{
 #if VOLUMIO
-		std::vector<uint8_t>	iData;
-
-		Http::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/getstate", iData );
-
-		std::string		str( (char*)iData.data(), iData.size() );
-
-		size_t			pos		= str.find( "\"status\":" );
-		int				value	= 0;
-
-		if( pos != std::string::npos )
-		{
-			pos		+= 9;
-			size_t	posE	= str.find( ',', pos );
-			
-			std::string	status( str.substr( pos, posE - pos ) );
-
-			if( std::string::npos != status.find( "play" ) )
-			{
-				Http::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/commands/?cmd=pause", iData );
-			}
-			else
-			{
-				Http::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/commands/?cmd=play", iData );
-			}
-		}
+		std::string	iData;
+		HttpCurl::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/commands/?cmd=toggle", iData );
 #else
 		Socket		iSock;
 		std::string	str;
@@ -220,24 +200,20 @@ public:
 #else
 		
 #if VOLUMIO
-		std::vector<uint8_t>	iData;
+		std::string	iData,err;
 
-		Http::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/getstate", iData );
+		HttpCurl::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/getstate", iData );
+		auto json = json11::Json::parse(iData, err);
 
-		std::string		str( (char*)iData.data(), iData.size() );
-
-		size_t			vol_pos	= str.rfind( ",\"volume\":" );
 		int				value	= 0;
 
-		if( vol_pos != std::string::npos )
-		{
+		if (1){
 			try
 			{
 				char		szBuf[256];
+				std::string	str;
 
-				vol_pos	+= 10;
-				value	= std::stoi( &str[vol_pos] );
-
+				value   = json["volume"].int_value();
 				value	+= offset;
 				value	= 0 <= value ? value <= 100 ? value : 100 : 0;
 
@@ -246,7 +222,7 @@ public:
 				str	= "/api/v1/commands/?cmd=volume&volume=";
 				str	+= szBuf;
 
-				Http::Get( VOLUMIO_HOST, VOLUMIO_PORT, str.c_str(), iData );
+				HttpCurl::Get( VOLUMIO_HOST, VOLUMIO_PORT, str.c_str(), iData );
 				
 				return	szBuf;
 			}
@@ -303,9 +279,8 @@ public:
 	static	void	PlayNextSong()
 	{
 #if VOLUMIO
-		std::vector<uint8_t>	iData;
-
-		Http::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/commands/?cmd=next", iData );
+		std::string	iData;
+		HttpCurl::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/commands/?cmd=next", iData );
 #else
 		Socket		iSock;
 		std::string	str;
@@ -319,9 +294,8 @@ public:
 	static	void	PlayPrevSong()
 	{
 #if VOLUMIO
-		std::vector<uint8_t>	iData;
-
-		Http::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/commands/?cmd=prev", iData );
+		std::string	iData;
+		HttpCurl::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/commands/?cmd=prev", iData );
 #else
 		Socket		iSock;
 		std::string	str;
@@ -746,7 +720,14 @@ public:
 				cv::Point2i(image.cols-1, image.rows-1),
 				cv::Scalar(255,255,255,255),
 				1 );
-
+#if VOLUMIO
+			// Load Volumio
+			if( map.find("AlbumArt") != map.end() ) {
+				std::vector<unsigned char> iData;
+				HttpCurl::Get( VOLUMIO_HOST, VOLUMIO_IMGPORT, map["AlbumArt"].c_str(), iData );
+				cover = cv::imdecode ( iData, cv::IMREAD_COLOR );
+			}else
+#endif
 			// Load music file
 			if( 0 != str.find("http://") )
 			{
@@ -970,16 +951,64 @@ public:
 		m_eDisplayMode		= DISPLAY_MODE_NONE;
 		m_isVolumeCtrlMode	= false;
 
+		m_iPrevGetStatusTime = std::chrono::system_clock::now();
+		std::map<std::string,std::string>	iInfo;
 		while( 1 )
 		{
-			std::map<std::string,std::string>	iInfo;
 	
 			///////////////////////////////////////////
 			// Receive current playback info.
 			///////////////////////////////////////////
 			{
 				std::string	strStatus;
-		
+#if VOLUMIO
+	auto   time    = std::chrono::system_clock::now();
+	double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(time - m_iPrevGetStatusTime).count();
+	if (!iInfo.size() || elapsed > POLLING_TIME_MS ) {
+		m_iPrevGetStatusTime = time;
+		std::string iData;
+
+		/* get state */
+		HttpCurl::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/getstate", iData );
+
+		/* parse json */
+		{
+			std::string err;
+			auto json = json11::Json::parse(iData, err);
+			iInfo.clear();
+
+			/* map to mpc status */
+			iInfo["state"] = json["status"].string_value();
+			iInfo["Title"] = json["title"].string_value();
+			iInfo["Album"] = json["album"].string_value();
+			iInfo["Artist"] = json["artist"].string_value();
+			iInfo["AlbumArt"]= json["albumart"].string_value();
+			iInfo["file"]    = json["uri"].string_value();
+			iInfo["volume"]  = std::to_string(json["volume"].int_value());
+			iInfo["Time"]    = std::to_string(json["duration"].int_value()*1000);
+			iInfo["elapsed"] = std::to_string(json["seek"].int_value());
+
+			iInfo["trackType"] = json["trackType"].string_value();
+			iInfo["samplerate"] = json["samplerate"].string_value();
+			iInfo["bitdepth"] = json["bitdepth"].string_value();
+		}
+	}
+
+#if 0
+{
+	std::string     iData;
+	HttpCurl::Get( VOLUMIO_HOST, VOLUMIO_PORT, "/api/v1/listplaylists", iData );
+
+	std::string err;
+	auto json = json11::Json::parse(iData, err);
+
+	for ( auto it : json.array_items() ){
+		std::cout << it.string_value() << std::endl;
+	}
+}
+#endif
+
+#else	
 				{
 					Socket		iSock;
 					std::string	strCurrentSong;
@@ -1039,6 +1068,7 @@ public:
 						iInfo["Album"]	= iInfo["Name"];
 					}
 				}
+#endif
 			}
 
 			if( iInfo["state"] == "play" )
@@ -1124,7 +1154,7 @@ public:
 					it->Flush();
 				}
 	
-				std::this_thread::sleep_for(std::chrono::milliseconds(20));
+				std::this_thread::sleep_for(std::chrono::milliseconds(REFRESH_TIME_MS));
 				break;
 				
 			case DISPLAY_MODE_IDLE:
@@ -1246,10 +1276,16 @@ protected:
 			x	= m * 2;
 			csz	= cy - y - m * 2;
 			iDrawAreas.push_back( new DrawArea_CoverImage(				*it,	x,	y,			csz,		csz	) );	x += csz + 8;
-
+#if VOLUMIO
+			iDrawAreas.push_back( new DrawArea_STR( "trackType",		white,	*it,	x,	cy-sml*3-med-m*4,				cx - x,		med	) );	y += med + 2;
+			iDrawAreas.push_back( new DrawArea_STR( "samplerate",		white,	*it,	x,	cy-sml*3-m*3,				cx - x,		sml	) );	y += sml + 2;
+			iDrawAreas.push_back( new DrawArea_STR( "bitdepth",		white,	*it,	x,	cy-sml*2-m*2,				cx - x,		sml	) );	y += sml + 2;
+			iDrawAreas.push_back( new DrawArea_CpuTemp(					*it,	x,	cy-sml-m,	cx - x,		sml ) );	y += med + 2;
+#else
 			iDrawAreas.push_back( new DrawArea_STR( "Date",		white,	*it,	x,	y,				cx - x,		med	) );	y += med + 2;
 			iDrawAreas.push_back( new DrawArea_CpuTemp(					*it,	x,	cy-sml*2-m*2,	cx - x,		sml ) );	y += med + 2;
 			iDrawAreas.push_back( new DrawArea_STR( "audio",	white,	*it,	x,	cy-sml-m,		cx - x,		sml	) );
+#endif
 		}
 		else
 		{
@@ -1442,6 +1478,8 @@ protected:
 	bool									m_isButtonPrevPressed;
 	std::chrono::system_clock::time_point	m_iButtonNextPressedTime;
 	std::chrono::system_clock::time_point	m_iButtonPrevPressedTime;
+
+	std::chrono::system_clock::time_point	m_iPrevGetStatusTime;
 };
 
 

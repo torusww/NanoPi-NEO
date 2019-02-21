@@ -1,10 +1,6 @@
 #ifndef	__DISPLAY_RGB565_SPI_H_INCLUDED__
 #define	__DISPLAY_RGB565_SPI_H_INCLUDED__
 
-#include <thread>
-#include <vector>
-#include "ctrl_spi.h"
-#include "ctrl_gpio.h"
 #include "img_conv.h"
 
 #include "display_if.h"

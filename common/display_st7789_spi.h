@@ -1,4 +1,3 @@
-
 #include "display_rgb565_spi.h"
 
 class Display_ST7789_spi : public Display_RGB565_spi8

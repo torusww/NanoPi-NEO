@@ -51,17 +51,18 @@ public:
 			curl_easy_setopt(curl, CURLOPT_URL, str.c_str());
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cb);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, iRecv);
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 750);
 			ret = curl_easy_perform(curl);
 			curl_easy_cleanup(curl);
 
 			if (ret != CURLE_OK) {
-				std::cerr << "curl_easy_perform() failed." << std::endl;
+				std::cerr << "curl_easy_perform() failed. request = " << str << std::endl;
 				return 1;
 			}
 		//	std::cout << iRecv << std::endl;
 
 		}
-
+		return 0;
 	};
 	static int Get( const char * pszHostName, int port, const char * URI, std::string& iRecv ) {
 		return Get(pszHostName, port, URI, &iRecv, (void *)callbackWriteStr);

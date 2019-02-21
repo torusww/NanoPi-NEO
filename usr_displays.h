@@ -1,21 +1,45 @@
 
 #include <vector>
+#include <thread>
+#include "common/ctrl_spi.h"
+#include "common/ctrl_gpio.h"
 
+#ifdef DISPLAY_NANOHATOLED
 #include "common/display_ssd1306_i2c.h"	// Conflict to fbdev.h. Use exclusive.
-//#include "common/display_fbdev.h"
+#endif
 
-#include "common/display_st7735_spi.h"
+#if defined(DISPLAY_FBDEV_FB0) || defined(DISPLAY_FBDEV_FB1)
+#include "common/display_fbdev.h"
+#endif
+
+#ifdef DISPLAY_13IPS240240
 #include "common/display_st7789_spi.h"
-#include "common/display_ili9341_spi.h"
-#include "common/display_ili9328_spi.h"
-#include "common/display_ili9225_spi.h"
-#include "common/display_ili9486_spi.h"
+#endif
+
+//#include "common/display_st7735_spi.h"
+//#include "common/display_ili9341_spi.h"
+//#include "common/display_ili9328_spi.h"
+//#include "common/display_ili9225_spi.h"
+//#include "common/display_ili9486_spi.h"
 
 std::vector<DisplayIF*>	GetUsrDisplays()
 {
 	std::vector<DisplayIF*>	iDisplays;
 
-//	iDisplays.push_back( new Display_SSD1306_i2c(180,0) );
+#ifdef DISPLAY_NANOHATOLED
+	iDisplays.push_back( new Display_SSD1306_i2c(180,0) );
+#endif
+#ifdef DISPLAY_13IPS240240
+	iDisplays.push_back( new Display_ST7789_IPS_240x240_spi(0) );
+#endif
+#ifdef DISPLAY_FBDEV_FB0
+	iDisplays.push_back( new Display_fbdev("/dev/fb0") );
+#endif
+#ifdef DISPLAY_FBDEV_FB1
+	iDisplays.push_back( new Display_fbdev("/dev/fb1") );
+#endif
+
+
 //	iDisplays.push_back( new Display_SSD1306_i2c(180,2) );	// for SH1306
 
 //	iDisplays.push_back( new Display_ILI9341_spi_TM24(270,67) );
@@ -28,8 +52,6 @@ std::vector<DisplayIF*>	GetUsrDisplays()
 //	iDisplays.push_back( new Display_WaveShare35_spi(0) );
 //	iDisplays.push_back( new Display_ILI9486_spi(270) );
 //	iDisplays.push_back( new Display_fbdev("/dev/fb1") );
-	iDisplays.push_back( new Display_ST7789_IPS_240x240_spi(0) );
-
 	return	iDisplays;
 }
 

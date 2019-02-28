@@ -8,7 +8,7 @@
 #include <vector>
 #include <map>
 
-#include "MusicController.hpp"
+class MusicController;
 class MenuController;
 
 class MenuList

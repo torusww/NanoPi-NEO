@@ -1,4 +1,5 @@
 #include "MenuController.hpp"
+#include "MusicController.hpp"
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -226,7 +227,7 @@ public:
 		{
 			return NULL;
 		}
-		std::cout << "exec cmd = " << cmd << std::endl;
+		std::string cmd = "sudo cp /boot/" + dtblists[index] + " /boot/" + DTBSELECTION_COPYTO;
 		std::system(cmd.c_str());
 		return NULL;
 	}

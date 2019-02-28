@@ -1,4 +1,8 @@
 #include "MenuController.hpp"
+#include <string>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 class MenuQueuelist : public MenuList
 {
@@ -192,6 +196,43 @@ public:
 	}
 };
 
+#ifdef DTBSELECTION
+class MenuDTBSelection : public MenuList
+{
+private:
+	std::vector<std::string> dtblists;
+public:
+	MenuDTBSelection(const char* iName, MenuController &iCtl ) : MenuList(iName, iCtl)
+	{
+		std::ifstream rfs;
+		std::string rbuff;
+		rfs.open(DTBSELECTION_LIST, std::ios::in);
+		while (getline(rfs,rbuff)) {
+			std::string dtbname, dtbfile;
+			std::istringstream sep(rbuff);
+			getline(sep, dtbname, '\t');
+			if (dtbname[0] == '#') continue; // comment line
+			getline(sep, dtbfile, '\t');
+			if (!dtbname.empty() && !dtbfile.empty()){
+				menulists.push_back(dtbname);
+				dtblists.push_back(dtbfile);
+			}
+		}
+	}
+
+	MenuList *exec()
+	{
+		if (index < 0 || index >= menulists.size())
+		{
+			return NULL;
+		}
+		std::cout << "exec cmd = " << cmd << std::endl;
+		std::system(cmd.c_str());
+		return NULL;
+	}
+};
+#endif
+
 class MenuMiscellaneous : public MenuList
 {
 public:
@@ -201,6 +242,9 @@ public:
 		menulists.push_back("Restart AirPlay");
 		menulists.push_back("Restart Volumio");
 		menulists.push_back("Restart MPD");
+#ifdef DTBSELECTION
+		addmenu(new MenuDTBSelection("DTB Selection", m_iCtl));
+#endif
 	}
 
 	MenuList *exec()
@@ -226,30 +270,8 @@ public:
 		case 3:
 			std::system("service mpd restart");
 			break;
-
-		}
-		return NULL;
-	}
-};
-
-class MenuStaging : public MenuList
-{
-public:
-	MenuStaging(const char* iName, MenuController &iCtl ) : MenuList(iName, iCtl)
-	{
-		menulists.push_back("CoverArt mode");
-	}
-
-	MenuList *exec()
-	{
-		if (index < 0 || index >= menulists.size())
-		{
-			return NULL;
-		}
-		switch (index)
-		{
-		case 0:
-			m_iCtl.emit("coverart", "true");
+		default:
+			return m_iMenulist[index];
 			break;
 		}
 		return NULL;

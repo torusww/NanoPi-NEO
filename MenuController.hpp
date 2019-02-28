@@ -21,7 +21,8 @@ protected:
 
 	int addmenu(MenuList *iMenu)
 	{
-		m_iMenulist.push_back(iMenu);
+		m_iMenulist.resize(menulists.size()+1);
+		m_iMenulist.insert(m_iMenulist.begin() + menulists.size(), iMenu);
 		menulists.push_back(iMenu->getname());
 		iMenu->prev = this;
 	}

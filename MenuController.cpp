@@ -272,6 +272,60 @@ public:
 };
 #endif
 
+#define LCDSLEEPTIME_FILE "/boot/lcd_sleeptime"
+class MenuLCDSleepTime : public MenuList
+{
+private:
+	int iLcdSleepTime;
+	int getSleepTime()
+	{
+		int ret = 0;
+		std::ifstream rfs;
+		std::string rbuff;
+		rfs.open(LCDSLEEPTIME_FILE, std::ios::in);
+		getline(rfs,rbuff);
+		if ( !rbuff.empty()) {
+			ret = std::stoi(rbuff);
+		}
+		return ret;
+	}
+public:
+	MenuLCDSleepTime(const char* iName, MenuController &iCtl ) : MenuList(iName, iCtl)
+	{
+		menulists.push_back("OFF");
+		for ( int i = 1; i <= 6; i++) {
+			std::string listname = std::to_string(i * 10) + " Sec";
+			menulists.push_back(listname);
+		}
+		iLcdSleepTime = getSleepTime();
+
+		// Setup Callback
+		m_iCtl.on("lcdsleeptime_update", [&](std::string &value)
+		{
+			std::cout << "Read Lcd Sleep Time= " << iLcdSleepTime << " Sec" << std::endl;
+			m_iCtl.emit("lcdsleeptime", std::to_string(iLcdSleepTime));
+		});
+	}
+
+	int enter()
+	{
+		index = iLcdSleepTime / 10;
+	}
+
+	MenuList *exec()
+	{
+		if (index < 0 || index >= menulists.size())
+		{
+			return nullptr;
+		}
+		iLcdSleepTime = index * 10;
+		m_iCtl.emit("lcdsleeptime", std::to_string(iLcdSleepTime));
+		std::string cmd = "echo " + std::to_string(iLcdSleepTime) + " > " + LCDSLEEPTIME_FILE + "; sync";
+		std::system(cmd.c_str());
+		return nullptr;
+	}
+};
+
 class MenuMiscellaneous : public MenuList
 {
 public:
@@ -296,6 +350,7 @@ public:
 			addmenu(new MenuGUISelection("Select GUI", m_iCtl));
 		}
 #endif
+		addmenu(new MenuLCDSleepTime("LCD Sleep Time", m_iCtl));
 	}
 
 	MenuList *exec()

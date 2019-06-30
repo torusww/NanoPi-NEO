@@ -1291,17 +1291,26 @@ public:
 			SetupLayout_SongInfoCA(m_iDrawAreasSongInfoCA, it);
 		}
 
-		////////////////////////////////////
-		// Gpio interrupt
-		////////////////////////////////////
+		// Setup Gpio
 		SetupButtons();
+
+		// Setup Music&Menu Resources
 		m_iMusicCtl = new MusicControllerVolumioSIO();
 		m_iMenuCtl  = new MenuController(*m_iMusicCtl, m_iMenuMaxlists);
 
+		// Setup Callback
 		m_iMenuCtl->on("coverart", [&](std::string &value)
 		{
 			m_isCoverArt = true;
 		});
+		m_iLcdSleepTime = 0;
+		m_iMenuCtl->on("lcdsleeptime", [&](std::string &value)
+		{
+			m_iLcdSleepTime = std::stoi( value );
+			std::cout << "Lcd Sleep Time= " << m_iLcdSleepTime << " Sec" << std::endl;
+		});
+		m_iMenuCtl->emit("lcdsleeptime_update", ""); // Update lcd sleep time request
+
 		return true;
 	}
 
@@ -1318,8 +1327,46 @@ public:
 		m_eDisplayMode = DISPLAY_MODE_NONE;
 		m_iMusicCtl->connect();
 
+		// for LCD Sleep Function
+		m_isLcdSleep = false;
+		m_isPrevLcdSleep = false;
+		m_iPrevKeyPressTime = std::chrono::system_clock::now();
+
 		while (1)
 		{
+			// LCD Sleep Check
+			{
+				double elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+										 std::chrono::system_clock::now() -
+										 m_iPrevKeyPressTime)
+										 .count();
+				
+				if ( !m_isLcdSleep && (m_iLcdSleepTime > 0) && (elapsed > m_iLcdSleepTime) ) {
+					// Sleep Detect
+					m_isLcdSleep = true;
+					m_isPrevLcdSleep = true;
+					for (auto it : m_iDisplays)
+					{
+						it->DispOff();
+					}
+				}else if (m_isLcdSleep == false && m_isPrevLcdSleep == true) {
+					// Resume Detect
+					m_isPrevLcdSleep = false;
+					for (auto it : m_iDisplays)
+					{
+						it->DispClear();
+						it->DispOn();
+					}
+					ePrevDisplayMode = DISPLAY_MODE_NONE;
+				}
+
+				if (m_isLcdSleep) {
+					// Sleep Loop
+					std::this_thread::sleep_for(std::chrono::milliseconds(REFRESH_IDLE_TIME_MS));
+					continue;
+				}
+			}
+
 			///////////////////////////////////////////
 			// Receive current playback info.
 			///////////////////////////////////////////
@@ -1924,6 +1971,9 @@ protected:
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_PREV,
 				[&](int value) {
+					m_iPrevKeyPressTime = std::chrono::system_clock::now();
+					m_isLcdSleep = false;
+
 					if (0 == value)
 					{
 						printf("OnButtonPrev_Up()\n");
@@ -1955,6 +2005,8 @@ protected:
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_NEXT,
 				[&](int value) {
+					m_iPrevKeyPressTime = std::chrono::system_clock::now();
+					m_isLcdSleep = false;
 					if (0 == value)
 					{
 						printf("OnButtonNext_Up()\n");
@@ -1987,12 +2039,17 @@ protected:
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_PLAY,
 				[&](int value) {
+					m_iPrevKeyPressTime = std::chrono::system_clock::now();
+					m_isLcdSleep = false;
 					if (0 == value)
 					{
 						printf("OnButtonPlay_Up()\n");
 						if (m_isButtonPlayPressed)
 						{
 							m_isButtonPlayPressed = false;
+							if (m_isPrevLcdSleep == true) {
+								return;
+							}
 							if (m_isCoverArt)
 							{
 								m_isCoverArt = false;
@@ -2018,6 +2075,8 @@ protected:
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_UP,
 				[&](int value) {
+					m_iPrevKeyPressTime = std::chrono::system_clock::now();
+					m_isLcdSleep = false;
 					if (0 == value)
 					{
 						printf("OnButtonUp_Up()\n");
@@ -2046,6 +2105,8 @@ protected:
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_DOWN,
 				[&](int value) {
+					m_iPrevKeyPressTime = std::chrono::system_clock::now();
+					m_isLcdSleep = false;
 					if (0 == value)
 					{
 						printf("OnButtonDown_Up()\n");
@@ -2110,7 +2171,13 @@ protected:
 	bool m_isButtonUpPressed;
 	bool m_isButtonDownPressed;
 #endif
+	// LCD Sleep
+	std::chrono::system_clock::time_point m_iPrevKeyPressTime;
+	bool m_isLcdSleep;
+	bool m_isPrevLcdSleep;
+	int  m_iLcdSleepTime;
 
+	// Info
 	std::map<std::string, std::string> iInfo;
 	std::map<std::string, std::string> iMenuInfo;
 	std::chrono::system_clock::time_point m_iPrevGetStatusTime;

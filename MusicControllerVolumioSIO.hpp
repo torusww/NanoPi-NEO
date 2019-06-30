@@ -34,8 +34,14 @@ public:
 	int setPlayQueue(int index);
 	int setPlayList (int index);
 
+	MenuList *getMenu(MenuController &iCtl);
+
 	bool m_isConnected;
 	void pollEvent();
+
+private:
+	int callMethod(std::string endpoint, std::string method, sio::message::ptr data);
+	int callMethod(const char* endpoint, const char* method, sio::message::ptr data);
 };
 
 #endif

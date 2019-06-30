@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <sys/stat.h>
 
 class MenuQueuelist : public MenuList
 {
@@ -37,7 +38,7 @@ public:
 	{
 		if (index < 0 || index >= menulists.size())
 		{
-			return NULL;
+			return nullptr;
 		}
 		m_iCtl.m_iMusicCtl.setPlayQueue(index);
 		return this; // stay menu
@@ -59,10 +60,10 @@ public:
 	{
 		if (index < 0 || index >= menulists.size())
 		{
-			return NULL;
+			return nullptr;
 		}
 		m_iCtl.m_iMusicCtl.setPlayList(index);
-		return NULL; // close menu
+		return nullptr; // close menu
 	}
 };
 
@@ -91,7 +92,7 @@ public:
 
 	MenuList *exec()
 	{
-		return NULL; // close menu
+		return nullptr; // close menu
 	}
 };
 
@@ -191,7 +192,7 @@ public:
 	{
 		if (index < 0 || index >= menulists.size())
 		{
-			return NULL;
+			return nullptr;
 		}
 		return m_iMenulist[index];
 	}
@@ -225,11 +226,48 @@ public:
 	{
 		if (index < 0 || index >= menulists.size())
 		{
-			return NULL;
+			return nullptr;
 		}
-		std::string cmd = "sudo cp /boot/" + dtblists[index] + " /boot/" + DTBSELECTION_COPYTO;
+		std::string cmd = "cp /boot/" + dtblists[index] + " /boot/" + DTBSELECTION_COPYTO;
 		std::system(cmd.c_str());
-		return NULL;
+		return nullptr;
+	}
+};
+#endif
+
+#ifdef GUISELECTION
+class MenuGUISelection : public MenuList
+{
+private:
+	std::vector<std::string> guilists;
+public:
+	MenuGUISelection(const char* iName, MenuController &iCtl ) : MenuList(iName, iCtl)
+	{
+		std::ifstream rfs;
+		std::string rbuff;
+		rfs.open(GUISELECTION_LIST, std::ios::in);
+		while (getline(rfs,rbuff)) {
+			std::string guiname, guifile;
+			std::istringstream sep(rbuff);
+			getline(sep, guiname, '\t');
+			if (guiname[0] == '#') continue; // comment line
+			getline(sep, guifile, '\t');
+			if (!guiname.empty() && !guifile.empty()){
+				menulists.push_back(guiname);
+				guilists.push_back(guifile);
+			}
+		}
+	}
+
+	MenuList *exec()
+	{
+		if (index < 0 || index >= menulists.size())
+		{
+			return nullptr;
+		}
+		std::string cmd = "rm /boot/gui_*; touch /boot/gui_" + guilists[index];
+		std::system(cmd.c_str());
+		return nullptr;
 	}
 };
 #endif
@@ -243,8 +281,20 @@ public:
 		menulists.push_back("Restart AirPlay");
 		menulists.push_back("Restart Volumio");
 		menulists.push_back("Restart MPD");
+
+#if defined(DTBSELECTION) || defined(GUISELECTION)
+		struct stat buffer;
+#endif
+
 #ifdef DTBSELECTION
-		addmenu(new MenuDTBSelection("DTB Selection", m_iCtl));
+		if (stat (DTBSELECTION_LIST, &buffer) == 0) {
+	  		addmenu(new MenuDTBSelection("Select DTB", m_iCtl));
+		}
+#endif
+#ifdef GUISELECTION
+		if (stat (GUISELECTION_LIST, &buffer) == 0) {
+			addmenu(new MenuGUISelection("Select GUI", m_iCtl));
+		}
 #endif
 	}
 
@@ -252,7 +302,7 @@ public:
 	{
 		if (index < 0 || index >= menulists.size())
 		{
-			return NULL;
+			return nullptr;
 		}
 		switch (index)
 		{
@@ -275,7 +325,7 @@ public:
 			return m_iMenulist[index];
 			break;
 		}
-		return NULL;
+		return nullptr;
 	}
 };
 
@@ -304,7 +354,7 @@ public:
 			sleep(1);
 			std::system(m_iCmd.c_str());
 		}
-		return NULL; // leave menu
+		return nullptr; // leave menu
 	}
 };
 
@@ -327,7 +377,7 @@ public:
 	{
 		if (index < 0 || index >= menulists.size())
 		{
-			return NULL;
+			return nullptr;
 		}
 		return m_iMenulist[index];
 	}
@@ -342,6 +392,8 @@ public:
 		if (m_iCtl.m_iMusicCtl.hasQueue())     addmenu(new MenuQueuelist("Queue", m_iCtl));
 		if (m_iCtl.m_iMusicCtl.hasPlaylists()) addmenu(new MenuPlaylist("Playlists", m_iCtl));
 		addmenu(new MenuAlsamixer("Alsa Mixer", m_iCtl));
+		MenuList *MusicCtlMenu = m_iCtl.m_iMusicCtl.getMenu(m_iCtl);
+		if (MusicCtlMenu != nullptr) addmenu(MusicCtlMenu);
 		addmenu(new MenuMiscellaneous("Miscellaneous", m_iCtl));
 		addmenu(new MenuPoweroff("PowerOff", m_iCtl));
 	}
@@ -350,7 +402,7 @@ public:
 	{
 		if (index < 0 || index >= menulists.size())
 		{
-			return NULL;
+			return nullptr;
 		}
 		return m_iMenulist[index];
 	}
@@ -385,7 +437,7 @@ int MenuController::close()
 {
 	std::lock_guard<std::mutex> lock(m_mtx);
 	m_iMenulist.clear();
-	m_iCurrent = NULL; // set root menu
+	m_iCurrent = nullptr; // set root menu
 	m_isUpdateMenu = false;
 	m_isMenuMode = false;
 }

@@ -31,7 +31,7 @@ public:
 	MenuList(const char* iName, MenuController &iCtl): m_iCtl(iCtl) {
 		name = iName;
 		index = 0;
-		prev = NULL;
+		prev = nullptr;
 	};
 
 	std::vector<std::string> menulists;

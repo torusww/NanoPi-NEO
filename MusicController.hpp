@@ -5,6 +5,9 @@
 #include <vector>
 #include <map>
 #include <iostream> // cout
+
+#include "MenuController.hpp"
+
 class MusicController
 {
 public:
@@ -80,6 +83,9 @@ public:
 	/* capability info */
 	bool hasQueue() { return m_hasQueue; }
 	bool hasPlaylists(){ return m_hasPlaylists; }
+
+	/* Menu i/f */
+	virtual MenuList *getMenu(MenuController &iCtl) {return nullptr;};
 
 protected:
 	// host/port

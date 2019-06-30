@@ -27,6 +27,40 @@ static void ThreadProc(MusicControllerVolumioSIO * piThis)
 	}
 }
 
+static void show_json_tree(sio::message::ptr msg, int indent = 0)
+{
+	std::string spc;
+	spc.insert(0,"              ",indent);
+	switch (msg->get_flag())
+	{
+	case sio::message::flag_integer:
+		std::cout << spc << "integer: " << msg->get_int() << std::endl;
+		break;
+	case sio::message::flag_string:
+		std::cout << spc << "string: " << msg->get_string() << std::endl;
+		break;
+	case sio::message::flag_boolean:
+		std::cout << spc << "bool: " << msg->get_bool() << std::endl;
+		break;
+	case sio::message::flag_double:
+		std::cout << spc << "double: " << msg->get_double() << std::endl;
+		break;
+	case sio::message::flag_array:
+		std::cout << spc << "array: " << msg->get_vector().size() << std::endl;
+		for ( auto it: msg->get_vector()) {
+			show_json_tree(it, indent + 1);
+		}
+		break;
+	case sio::message::flag_object:
+		std::cout << spc << "object: " << msg->get_map().size() << std::endl;
+		for ( auto it: msg->get_map()) {
+			std::cout << spc << " map: " << it.first << std::endl;
+			show_json_tree(it.second, indent + 1);
+		}
+		break;
+	}
+}
+
 int MusicControllerVolumioSIO::connect()
 {
 	m_iState.clear();
@@ -58,10 +92,10 @@ int MusicControllerVolumioSIO::connect()
 			}
 		}
 		/* map to mpd status */
-		m_iState["state"] = m_iState["status"].empty() ? "" : m_iState["status"];
-		m_iState["Title"] = m_iState["title"].empty() ? "" : m_iState["title"];
-		m_iState["Album"] = m_iState["album"].empty() ? "" : m_iState["album"];
-		m_iState["Artist"] = m_iState["artist"].empty() ? "" : m_iState["artist"];
+		m_iState["state"] = m_iState["status"].empty() ? " " : m_iState["status"];
+		m_iState["Title"] = m_iState["title"].empty() ? " " : m_iState["title"];
+		m_iState["Album"] = m_iState["album"].empty() ? " " : m_iState["album"];
+		m_iState["Artist"] = m_iState["artist"].empty() ? " " : m_iState["artist"];
 		if (!m_iState["duration"].empty()) m_iState["Time"] = std::to_string(std::stoi(m_iState["duration"]) * 1000);
 		if (!m_iState["seek"].empty()) m_iState["elapsed"] = m_iState["seek"];
 		if (!m_iState["uri"].empty())
@@ -74,6 +108,7 @@ int MusicControllerVolumioSIO::connect()
 		}
 		m_iState["connected"] = "connected";
 		m_iState["hostname"]  = m_nHostname;
+		m_iState["pcmrate"] = m_iState["samplerate"] + " / " + m_iState["bitdepth"];
 		m_isUpdateState = true;
 //		for (auto it : m_iState)	std::cout << it.first << " : " << it.second << std::endl;
 	});
@@ -142,11 +177,38 @@ int MusicControllerVolumioSIO::connect()
 		m_nHostname = msg->get_map().count("name") ? msg->get_map()["name"]->get_string() : "";
 	});
 
+	m_v2sio.socket()->on("pushOutputDevices", [&](sio::event &ev) {
+		std::cout << ev.get_name() << std::endl;
+		sio::message::ptr msg = ev.get_message();
+
+		/* parse JSON */
+		show_json_tree(msg);
+	});
+
+	m_v2sio.socket()->on("pushMethod", [&](sio::event &ev) {
+		std::cout << ev.get_name() << std::endl;
+		sio::message::ptr msg = ev.get_message();
+
+		/* parse JSON */
+		show_json_tree(msg);
+	});
+
+	m_v2sio.socket()->on("pushAudioOutputs", [&](sio::event &ev) {
+		std::cout << ev.get_name() << std::endl;
+		sio::message::ptr msg = ev.get_message();
+
+		/* parse JSON */
+		show_json_tree(msg);
+	});
+
 	m_v2sio.set_socket_open_listener([&](std::string const &nsp) {
 		std::cout << "socket open" << std::endl;
 		m_v2sio.socket()->emit("getDeviceInfo");
 		m_v2sio.socket()->emit("getQueue");
 		m_v2sio.socket()->emit("listPlaylist");
+//			m_v2sio.socket()->emit("getOutputDevices");
+//			m_v2sio.socket()->emit("getAudioOutputs");
+//			callMethod("audio_interface/alsa_controller", "getAudioDevices", sio::null_message::create());
 		m_v2sio.socket()->emit("getState");
 	});
 
@@ -321,4 +383,36 @@ void MusicControllerVolumioSIO::pollEvent()
 			m_nAlbumart = "";
 		}
 	}
+}
+
+// "endpoint":"audio_interface/alsa_controller", "method":"saveAlsaOptions"}
+int MusicControllerVolumioSIO::callMethod(std::string endpoint, std::string method, sio::message::ptr data)
+{
+	sio::message::ptr send_data(sio::object_message::create());
+	std::map<std::string, sio::message::ptr>& map = send_data->get_map();
+	map.insert(std::make_pair("endpoint", sio::string_message::create(endpoint)));
+	map.insert(std::make_pair("method", sio::string_message::create(method)));
+	if (data == nullptr) data = sio::null_message::create();
+	map.insert(std::make_pair("data", data));
+	m_v2sio.socket()->emit("callMethod", send_data);
+
+	return 0;
+}
+int MusicControllerVolumioSIO::callMethod(const char* endpoint, const char* method, sio::message::ptr data)
+{
+	return callMethod(std::string(endpoint), std::string(method), data);
+}
+
+
+class MenuVolumio : public MenuList
+{
+protected:
+public:
+	using MenuList::MenuList;
+};
+
+MenuList *MusicControllerVolumioSIO::getMenu(MenuController &iCtl)
+{
+//	return new MenuVolumio("Volumio", iCtl);
+	return nullptr;
 }

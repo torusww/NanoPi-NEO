@@ -76,6 +76,12 @@ public:
 		}
 
 		m_nDispCtrl	= nDispCtrl;
+
+		// for lcd off script
+		if (nGpioBackLight >= 0) {
+			std::string cmd = "echo " + std::to_string(nGpioBackLight) + " > /tmp/lcd_bl_gpio";
+			system(cmd.c_str());
+		}
 	}
 
 	virtual	int	Init()

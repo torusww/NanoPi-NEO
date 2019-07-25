@@ -9,6 +9,21 @@
 const int m_iPollTime = 50;
 const int m_iElapseUpdateTime = 1000;
 
+class MusicList
+{
+public:
+	bool isSong;
+	std::string name;
+	std::string uri;
+
+	MusicList(bool ty, std::string nm, std::string ur)
+	{
+		isSong = ty;
+		name = nm;
+		uri = ur;
+	}
+};
+
 class MusicControllerVolumioSIO : public MusicController
 {
 private:
@@ -19,6 +34,7 @@ private:
 
 	std::thread m_iThread;
 	std::chrono::system_clock::time_point m_iPrevPollTime;
+	int m_iCoverartRetryCnt;
 
 public:
 	MusicControllerVolumioSIO();
@@ -33,6 +49,16 @@ public:
 	int getPlayPos();
 	int setPlayQueue(int index);
 	int setPlayList (int index);
+
+	// volumio specific fuction(Music Library)
+	int emitVolumio(std::string cmd);
+	int emitVolumio(std::string cmd, std::string key, std::string data);
+	int emitVolumio(std::string cmd, std::string key, int data);
+	int addToQueue (std::string &uri);
+	std::vector<MusicList> browseLibrary (std::string &uri);
+	std::vector<MusicList> m_iLib;
+	bool m_isLibFlag;
+	int addWebRadio(std::string name, std::string uri);
 
 	MenuList *getMenu(MenuController &iCtl);
 

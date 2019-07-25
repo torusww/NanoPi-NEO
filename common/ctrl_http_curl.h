@@ -25,16 +25,9 @@ private:
 		return dataLength;
 	};
 
-
-
 public:
-	static int Get( const char * pszHostName, int port, const char * URI, void* iRecv, void *cb )
+	static int Get( std::string uri, std::vector<unsigned char>& iRecv )
 	{
-		std::string	str;
-		int			ret;
-		
-		str = "http://" + std::string(pszHostName) + ":" +  std::to_string(port) + std::string(URI);
-    
 		/* get state */
 		{
 			CURL *curl;
@@ -46,29 +39,49 @@ public:
 				return 1;
 			}
 #ifdef CURL_DEBUG
-	std::cout << "curl request url:" << str << std::endl;
+			std::cout << "curl request url:" << uri << std::endl;
 #endif
-			curl_easy_setopt(curl, CURLOPT_URL, str.c_str());
-			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, cb);
-			curl_easy_setopt(curl, CURLOPT_WRITEDATA, iRecv);
+#if 1			// encode uri
+			char enc_uri[1024] = {0};
+			int dst = 0;
+			for (int src = 0; src < uri.size(); src++) {
+				if (dst >= (sizeof(enc_uri) - 4)) {
+					std::cerr << "uri encode fail. request = " << uri << std::endl;
+					return 1;
+				}
+				char c = uri[src];
+				if (c == ' ')
+				{
+					enc_uri[dst++] = '%';
+					enc_uri[dst++] = '2';
+					enc_uri[dst++] = '0';
+//					enc_uri[dst++] = "0123456789abcdef"[c & 0xf0 >> 4];
+//					enc_uri[dst++] = "0123456789abcdef"[c & 0xf];
+				}else{
+					enc_uri[dst++] = c;
+				}
+			}
+#ifdef CURL_DEBUG
+			std::cout << "curl request enc url:" << std::string(enc_uri) << std::endl;
+#endif
+#endif
+			// Request Http GET
+//			curl_easy_setopt(curl, CURLOPT_URL, enc_uri);
+			curl_easy_setopt(curl, CURLOPT_URL, uri.c_str());
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, (void *)callbackWriteVectorUB);
+			curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, &iRecv);
 			curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 750);
 			ret = curl_easy_perform(curl);
 			curl_easy_cleanup(curl);
 
 			if (ret != CURLE_OK) {
-				std::cerr << "curl_easy_perform() failed. request = " << str << std::endl;
+				std::cerr << "curl_easy_perform() failed. request = " << uri << std::endl;
 				return 1;
 			}
-		//	std::cout << iRecv << std::endl;
-
+//			std::cout << iRecv << std::endl;
 		}
 		return 0;
-	};
-	static int Get( const char * pszHostName, int port, const char * URI, std::string& iRecv ) {
-		return Get(pszHostName, port, URI, &iRecv, (void *)callbackWriteStr);
-	};
-	static int Get( const char * pszHostName, int port, const char * URI, std::vector<unsigned char>& iRecv ) {
-		return Get(pszHostName, port, URI, &iRecv, (void *)callbackWriteVectorUB);
 	};
 };
 

@@ -13,6 +13,7 @@ MusicControllerVolumioSIO::MusicControllerVolumioSIO(): MusicController()
 	m_iPortImage = 3001;
 
 	m_isConnected = false;
+	m_iCoverartRetryCnt = 0;
 
 	// override capability
 	m_hasQueue = true;
@@ -25,6 +26,51 @@ static void ThreadProc(MusicControllerVolumioSIO * piThis)
 	{
 		piThis->pollEvent();
 	}
+}
+
+static sio::message::ptr findObject(sio::message::ptr msg, std::string objname)
+{
+	switch (msg->get_flag())
+	{
+	case sio::message::flag_array:
+//		std::cout << "array: " << msg->get_vector().size() << std::endl;
+		for ( auto it: msg->get_vector()) {
+			sio::message::ptr ret = findObject(it, objname);
+			if (ret != nullptr) return ret;
+		}
+		break;
+	case sio::message::flag_object:
+//		std::cout << "object: " << msg->get_map().size() << std::endl;
+		for ( auto it: msg->get_map()) {
+//			std::cout << " map: " << it.first << std::endl;
+			if ( it.first == objname) {
+				return it.second;
+			}else{
+				sio::message::ptr ret = findObject(it.second, objname);
+				if (ret != nullptr) return ret;
+			}
+		}
+		break;
+	}
+
+	return nullptr;
+}
+
+static std::string getStringFromObject(sio::message::ptr msg, std::string mapname)
+{
+	std::string ret = "";
+	if (msg->get_flag() == sio::message::flag_object ) {
+//		std::cout << "object: " << msg->get_map().size() << std::endl;
+		for ( auto it: msg->get_map()) {
+//			std::cout << " map: " << it.first << std::endl;
+			if ( it.first == mapname && it.second->get_flag() == sio::message::flag_string) {
+				ret = it.second->get_string();
+				break;
+			}
+		}
+	}
+
+	return ret;
 }
 
 static void show_json_tree(sio::message::ptr msg, int indent = 0)
@@ -106,10 +152,15 @@ int MusicControllerVolumioSIO::connect()
 		{ // airplay mode
 			m_iState["file"] = m_iState["Title"] + m_iState["Album"] + m_iState["Artist"];
 		}
-		m_iState["connected"] = "connected";
+		if (m_iState["updatedb"] == "true") {
+			m_iState["connected"] = "updateDB";
+		}else{
+			m_iState["connected"] = "connected";
+		}
 		m_iState["hostname"]  = m_nHostname;
 		m_iState["pcmrate"] = m_iState["samplerate"] + " / " + m_iState["bitdepth"];
 		m_isUpdateState = true;
+		m_iCoverartRetryCnt = 0;
 //		for (auto it : m_iState)	std::cout << it.first << " : " << it.second << std::endl;
 	});
 
@@ -201,6 +252,40 @@ int MusicControllerVolumioSIO::connect()
 		show_json_tree(msg);
 	});
 
+	m_v2sio.socket()->on("pushBrowseSources", [&](sio::event &ev) {
+		std::cout << ev.get_name() << std::endl;
+		sio::message::ptr msg = ev.get_message();
+
+		/* parse JSON */
+		show_json_tree(msg);
+	});
+
+	m_v2sio.socket()->on("pushBrowseLibrary", [&](sio::event &ev) {
+		std::cout << ev.get_name() << std::endl;
+		sio::message::ptr msg = ev.get_message();
+
+		/* parse JSON */
+		sio::message::ptr obj = findObject(msg, "items");
+		if (obj != nullptr) {
+			std::cout << "found items" << std::endl;
+			std::lock_guard<std::mutex> lock(m_mtx);
+			m_iLib.clear();
+
+			if ( obj->get_flag() ==sio::message::flag_array ) {
+				std::cout << "array: " << obj->get_vector().size() << std::endl;
+				for ( auto it: obj->get_vector()) {
+					std::string title = getStringFromObject(it, "title");
+					std::string type  = getStringFromObject(it, "type");
+					std::string uri   = getStringFromObject(it, "uri");
+					bool type_song = ( type == "song") || ( type == "webradio" );
+					std::cout << "title: " << title << "  type: " << type << "  uri: " << uri << std::endl;
+					m_iLib.push_back(MusicList(type_song, title, uri));
+				}
+			}
+			m_isLibFlag = true;
+		}
+	});
+
 	m_v2sio.set_socket_open_listener([&](std::string const &nsp) {
 		std::cout << "socket open" << std::endl;
 		m_v2sio.socket()->emit("getDeviceInfo");
@@ -208,6 +293,8 @@ int MusicControllerVolumioSIO::connect()
 		m_v2sio.socket()->emit("listPlaylist");
 //			m_v2sio.socket()->emit("getOutputDevices");
 //			m_v2sio.socket()->emit("getAudioOutputs");
+//			m_v2sio.socket()->emit("getBrowseSources");
+
 //			callMethod("audio_interface/alsa_controller", "getAudioDevices", sio::null_message::create());
 		m_v2sio.socket()->emit("getState");
 	});
@@ -275,6 +362,7 @@ int MusicControllerVolumioSIO::disconnect()
 int MusicControllerVolumioSIO::toggle()
 {
 	m_v2sio.socket()->emit("toggle");
+	m_v2sio.socket()->emit("getQueue");
 	return 0;
 }
 
@@ -323,12 +411,8 @@ int MusicControllerVolumioSIO::getPlayPos()
 int MusicControllerVolumioSIO::setPlayQueue(int index)
 {
 	std::lock_guard<std::mutex> lock(m_mtx);
-	// setup parameter
-	sio::message::ptr send_data(sio::object_message::create());
-	std::map<std::string, sio::message::ptr>& map = send_data->get_map();
-	map.insert(std::make_pair("value", sio::int_message::create(index)));
 	// emit
-	m_v2sio.socket()->emit("play", send_data);
+	emitVolumio("play", "value", index);
 	// update local info
 	m_iState["position"] = std::to_string(index);
 	return 0;
@@ -336,12 +420,40 @@ int MusicControllerVolumioSIO::setPlayQueue(int index)
 int MusicControllerVolumioSIO::setPlayList (int index)
 {
 	std::lock_guard<std::mutex> lock(m_mtx);
+	return emitVolumio("playPlaylist", "name", m_iPlaylist[index]);
+}
+
+int MusicControllerVolumioSIO::addToQueue (std::string &uri)
+{
+	return emitVolumio("addToQueue", "uri", uri);
+}
+
+int MusicControllerVolumioSIO::emitVolumio(std::string cmd)
+{
+	// emit
+	m_v2sio.socket()->emit(cmd);
+	return 0;
+}
+
+int MusicControllerVolumioSIO::emitVolumio(std::string cmd, std::string key, std::string data)
+{
 	// setup parameter
 	sio::message::ptr send_data(sio::object_message::create());
 	std::map<std::string, sio::message::ptr>& map = send_data->get_map();
-	map.insert(std::make_pair("name", sio::string_message::create(m_iPlaylist[index])));
+	map.insert(std::make_pair(key, sio::string_message::create(data)));
 	// emit
-	m_v2sio.socket()->emit("playPlaylist", send_data);
+	m_v2sio.socket()->emit(cmd, send_data);
+	return 0;
+}
+
+int MusicControllerVolumioSIO::emitVolumio(std::string cmd, std::string key, int data)
+{
+	// setup parameter
+	sio::message::ptr send_data(sio::object_message::create());
+	std::map<std::string, sio::message::ptr>& map = send_data->get_map();
+	map.insert(std::make_pair(key, sio::int_message::create(data)));
+	// emit
+	m_v2sio.socket()->emit(cmd, send_data);
 	return 0;
 }
 
@@ -366,10 +478,17 @@ void MusicControllerVolumioSIO::pollEvent()
 	}
 
 	// get coverart
-	if ( m_nAlbumart != m_iState["albumart"] ) {
+	if ( m_iCoverartRetryCnt < 3 && m_nAlbumart != m_iState["albumart"] ) {
+		int ret;
 		std::vector<unsigned char> iData;
 		std::string url = m_iState["albumart"];
-		if (!HttpCurl::Get(m_iHost.c_str(), m_iPortImage, url.c_str(), iData))
+		if (url.substr(0, 4) == "http") {
+			ret = HttpCurl::Get(url, iData);
+		}else{
+			std::string str = "http://" + m_iHost + ":" +  std::to_string(m_iPortImage) + url;
+			ret = HttpCurl::Get(str, iData);
+		}
+		if (ret == 0 && iData.size() > 1024)
 		{
 			std::lock_guard<std::mutex> lock(m_mtx);
 			std::cout << "getAlbumart" << " : " << iData.size() << std::endl;
@@ -380,9 +499,26 @@ void MusicControllerVolumioSIO::pollEvent()
 		}
 		else
 		{
+			std::lock_guard<std::mutex> lock(m_mtx);
+			m_iCoverart.clear();
+			std::cout << "getAlbumart failed size = " << iData.size() <<  std::endl;
 			m_nAlbumart = "";
+			m_iCoverartRetryCnt++;
+			m_isUpdateCoverart = false;
 		}
 	}
+}
+
+int MusicControllerVolumioSIO::addWebRadio(std::string name, std::string uri)
+{
+	sio::message::ptr send_data(sio::object_message::create());
+	std::map<std::string, sio::message::ptr>& map = send_data->get_map();
+	map.insert(std::make_pair("service", sio::string_message::create("webradio")));
+	map.insert(std::make_pair("title", sio::string_message::create(name)));
+	map.insert(std::make_pair("uri", sio::string_message::create(uri)));
+	m_v2sio.socket()->emit("addPlay", send_data);
+
+	return 0;
 }
 
 // "endpoint":"audio_interface/alsa_controller", "method":"saveAlsaOptions"}
@@ -404,15 +540,147 @@ int MusicControllerVolumioSIO::callMethod(const char* endpoint, const char* meth
 }
 
 
+std::vector<MusicList> MusicControllerVolumioSIO::browseLibrary (std::string &uri)
+{
+	std::vector<MusicList> list;
+	// emit cmd
+	{
+		std::lock_guard<std::mutex> lock(m_mtx);
+		m_iLib.clear();
+		m_isLibFlag = false;
+		std::cout << "browseLibrary: " << uri << std::endl;
+		emitVolumio("browseLibrary", "uri", uri);
+	}
+
+	// sync data
+	for (int i = 0; i < 50; i++) {
+		{
+			std::lock_guard<std::mutex> lock(m_mtx);
+			if (m_isLibFlag) {
+				list = m_iLib;
+				break;
+			}
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+
+	return list;
+}
+
+class MenuMusicLib : public MenuList
+{
+private:
+	std::string m_iUri;
+	MusicControllerVolumioSIO *m_iMusic;
+	std::vector<MusicList> m_iList;
+	bool m_isWebRadio;
+public:
+	MenuMusicLib(const char* iName, MenuController &iCtl,  MusicControllerVolumioSIO *iMusic, std::string uri, bool isRadio = false ) : MenuList(iName, iCtl)
+	{
+		m_iMusic = iMusic;
+		m_iUri = uri;
+		m_isWebRadio = isRadio;
+	}
+
+	int enter()
+	{
+		// clear list
+		for (auto it : m_iMenulist)
+			delete it.second;
+		m_iMenulist.clear();
+		menulists.clear();
+
+		// request
+		m_iList = m_iMusic->browseLibrary(m_iUri);
+
+		// create list
+		if (m_iList.empty()) {
+			index = -1;
+			return 0;
+		}
+		if (!m_isWebRadio) {
+			menulists.push_back("[Add Queue]"); // Add Queue Menu
+		}
+		for (auto it: m_iList){
+			if (it.isSong) { // Music File
+				menulists.push_back(it.name);
+			}else{ // Folder
+				std::string listname = "<" + it.name +">";
+				addmenu(new MenuMusicLib(listname.c_str(), m_iCtl, m_iMusic, it.uri, m_isWebRadio));
+			}
+		}
+	}
+
+	MenuList *exec()
+	{
+		int l_index = index;
+		if ( !m_isWebRadio && index == 0) {
+			m_iMusic->addToQueue(m_iUri);
+			return nullptr; // leave menu
+		}
+		if ( !m_isWebRadio ) l_index--;
+
+		if (m_iList[l_index].isSong) { // Music file
+			std::cout << "addToQueue: " << m_iList[l_index].name << " : " << m_iList[l_index].uri << " : " << m_isWebRadio << std::endl;
+			if (m_isWebRadio) {
+				m_iMusic->addWebRadio(m_iList[l_index].name, m_iList[l_index].uri);
+			}else{
+				m_iMusic->emitVolumio("addPlay", "uri", m_iList[l_index].uri);
+			}
+			return this;
+		}else{ // Folder
+			std::cout << "enter: " << m_iList[l_index].name << " : " << m_iList[l_index].uri << std::endl;
+			return m_iMenulist[index];
+		}
+	}
+};
+
+
 class MenuVolumio : public MenuList
 {
-protected:
+private:
+	MusicControllerVolumioSIO *m_iMusic;
 public:
-	using MenuList::MenuList;
+	MenuVolumio(const char* iName, MenuController &iCtl,  MusicControllerVolumioSIO *iMusic) : MenuList(iName, iCtl)
+	{
+		m_iMusic = iMusic;
+		menulists.push_back("Clear Queue");
+		addmenu(new MenuMusicLib("Music Library", m_iCtl, iMusic, "music-library"));
+		addmenu(new MenuMusicLib(" -artists", m_iCtl, iMusic, "artists://"));
+		addmenu(new MenuMusicLib(" -albums", m_iCtl, iMusic, "albums://"));
+		addmenu(new MenuMusicLib(" -genres", m_iCtl, iMusic, "genres://"));
+		addmenu(new MenuMusicLib("Web Radio", m_iCtl, iMusic, "radio", true));
+		menulists.push_back("Update DB");
+		menulists.push_back("Rescan DB");
+	}
+	int enter()
+	{
+		index = 0;
+	}
+
+	MenuList *exec()
+	{
+		switch(index) {
+			case 0:
+			m_iMusic->emitVolumio("clearQueue");
+			break;
+
+			case 6:
+			m_iMusic->emitVolumio("updateDb");
+			break;
+
+			case 7:
+			m_iMusic->emitVolumio("rescanDb");
+			break;
+
+			default:
+			return m_iMenulist[index];
+		}
+		return nullptr; // leave menu
+	}
 };
 
 MenuList *MusicControllerVolumioSIO::getMenu(MenuController &iCtl)
 {
-//	return new MenuVolumio("Volumio", iCtl);
-	return nullptr;
+	return new MenuVolumio("Volumio", iCtl, this);
 }

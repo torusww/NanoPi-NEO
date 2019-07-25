@@ -53,6 +53,9 @@ public:
 	bool isUpdateCoverart() { return m_isUpdateCoverart; }
 	virtual int getCoverart(std::vector<unsigned char>& iData) {
 		std::lock_guard<std::mutex> lock(m_mtx);
+		if (m_iCoverart.size() == 0) {
+			return 1;
+		}
 		iData.clear();
 		iData = m_iCoverart;
 		m_isUpdateCoverart = false;

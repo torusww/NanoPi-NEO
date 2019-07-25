@@ -136,7 +136,7 @@ public:
 	{
 		/* clear list */
 		for (auto it : m_iMenulist)
-			delete it;
+			delete it.second;
 		m_iMenulist.clear();
 		menulists.clear();
 
@@ -350,7 +350,7 @@ public:
 			addmenu(new MenuGUISelection("Select GUI", m_iCtl));
 		}
 #endif
-		addmenu(new MenuLCDSleepTime("LCD Sleep Time", m_iCtl));
+		addmenu(new MenuLCDSleepTime("LCD Sleep Timer", m_iCtl));
 	}
 
 	MenuList *exec()

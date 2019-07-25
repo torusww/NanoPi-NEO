@@ -1024,7 +1024,7 @@ public:
 						image.step,
 						image.cols,
 						image.rows);
-				m_nCurrent = "";
+				m_nCurrent = " ";
 			}
 
 			m_iDisp.WriteImageBGRA(m_nRectX, m_nRectY, image.data, image.step, image.cols, image.rows);
@@ -1584,7 +1584,7 @@ public:
 				return true;
 			}
 		}
-		return false;
+		return force;
 	}
 
 protected:

@@ -16,13 +16,12 @@ class MenuList
 private:
 protected:
 	std::string name;
-	std::vector<class MenuList *> m_iMenulist; // submenu
+	std::map<int , class MenuList *> m_iMenulist; // submenu
 	MenuController &m_iCtl;
 
 	int addmenu(MenuList *iMenu)
 	{
-		m_iMenulist.resize(menulists.size()+1);
-		m_iMenulist.insert(m_iMenulist.begin() + menulists.size(), iMenu);
+		m_iMenulist[menulists.size()] = iMenu;
 		menulists.push_back(iMenu->getname());
 		iMenu->prev = this;
 	}
@@ -32,7 +31,14 @@ public:
 		name = iName;
 		index = 0;
 		prev = nullptr;
-	};
+	}
+
+	~MenuList() {
+		for (auto it : m_iMenulist)
+			delete it.second;
+		m_iMenulist.clear();
+		menulists.clear();
+	}
 
 	std::vector<std::string> menulists;
 	int index;

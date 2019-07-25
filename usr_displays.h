@@ -2,7 +2,7 @@
 #include <vector>
 #include <thread>
 #include "common/ctrl_spi.h"
-#include "common/ctrl_gpio.h"
+#include "common/ctrl_gpio_poll.h"
 
 #ifdef DISPLAY_NANOHATOLED
 #include "common/display_ssd1306_i2c.h"	// Conflict to fbdev.h. Use exclusive.

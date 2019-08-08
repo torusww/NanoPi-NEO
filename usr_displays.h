@@ -12,7 +12,7 @@
 #include "common/display_fbdev.h"
 #endif
 
-#if defined(DISPLAY_13IPS240240) || defined(DISPLAY_IPS320240)|| defined(DISPLAY_IPS320240V)
+#if defined(DISPLAY_13IPS240240) || defined(DISPLAY_IPS320240)|| defined(DISPLAY_IPS320240V) || defined(DISPLAY_13IPS240240_RPI)
 #include "common/display_st7789_spi.h"
 #endif
 
@@ -31,6 +31,9 @@ std::vector<DisplayIF*>	GetUsrDisplays()
 #endif
 #ifdef DISPLAY_13IPS240240
 	iDisplays.push_back( new Display_ST7789_IPS_240x240_spi(0) );
+#endif
+#ifdef DISPLAY_13IPS240240_RPI
+	iDisplays.push_back( new Display_ST7789_IPS_240x240_spi(270, -1,25,27,24) );
 #endif
 #ifdef DISPLAY_FBDEV_FB0
 	iDisplays.push_back( new Display_fbdev("/dev/fb0") );

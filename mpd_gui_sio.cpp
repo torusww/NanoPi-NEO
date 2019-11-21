@@ -2208,6 +2208,7 @@ void printusage(void)
 #endif
 
 int main(int argc, char **argv)
+
 {
 	MpdGui iMPD;
 

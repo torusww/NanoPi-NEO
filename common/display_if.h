@@ -30,10 +30,9 @@ public:
 
 public:
 	DisplayIF(){};
-	virtual ~DisplayIF(){};
 	
 	int Init(){
-		return 0；
+		return 0;
 	}
 	int DispClear(){
 		return 0;
@@ -61,10 +60,6 @@ public:
 		return  m_tDispSize;
 	}
 	
-	virtual	int			GetBPP()=0;
-
-protected:
-
 
 protected:
 	DispSize     m_tDispSize;

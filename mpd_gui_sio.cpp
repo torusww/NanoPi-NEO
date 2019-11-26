@@ -318,7 +318,7 @@ public:
 
 		float duration = itT != map.end() ? std::stof((*itT).second) : 1;
 		float elapsed = itE != map.end() ? std::stof((*itE).second) : 0;
-		m_iDisp.WriteString(m_nRectX,m_nRectY,2,(int)duration);
+		m_iDisp.WriteString(m_nRectX,m_nRectY,2,"duration");
 
 	}
 };
@@ -1082,7 +1082,7 @@ protected:
 			iDrawAreas.push_back(new DrawArea_STR("MenuList7", white, *it, x, y, cx - 2 * x, med, false));
 			y += med + 1;
 			#endif
-			iDrawAreas.push_back(new DrawArea_Marker("MarkerBottom", *it, cx / 2 - mark_dx / 2, y, mark_dx, mark_dy, 1));
+			//iDrawAreas.push_back(new DrawArea_Marker("MarkerBottom", *it, cx / 2 - mark_dx / 2, y, mark_dx, mark_dy, 1));
 		}
 		else
 		{

@@ -48,6 +48,7 @@ public:
 	}
 
 	int WriteString( int x, int y,int color,const std::string& str){
+		std::cout << x << y << str <<std::endl;
 
 	}
 	

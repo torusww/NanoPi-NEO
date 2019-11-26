@@ -326,7 +326,7 @@ public:
 		int x = 0;
 		char buf[128];
 		float cpuTemp = std::stof(StringUtil::GetTextFromFile("/sys/class/thermal/thermal_zone0/temp")) / 1000.0f;
-		m_iDisp.WriteString(m_nRectX,m_nRectY,3,"hello");
+		m_iDisp.WriteString(m_nRectX,m_nRectY,3,"cputemp");
 	}
 
 protected:
@@ -1282,6 +1282,8 @@ void printusage(void)
 int main(int argc, char **argv)
 
 {
+	GpioOut lcden(66);
+	lcden << 1;
 	MpdGui iMPD;
 
 #ifdef ENABLE_GETOPT

@@ -191,8 +191,7 @@ protected:
 class DrawArea_STR : public DrawAreaIF
 {
 public:
-	DrawArea_STR(const std::string &tag, uint32_t color, DisplayIF &iDisplay, int x, int y, int cx, int cy, bool isRightAlign = false) : DrawAreaIF(iDisplay, x, y, cx, cy),
-																																																																			 m_iFont(FONT_PATH, m_nRectHeight)
+	DrawArea_STR(const std::string &tag, uint32_t color, DisplayIF &iDisplay, int x, int y, int cx, int cy, bool isRightAlign = false) : DrawAreaIF(iDisplay, x, y, cx, cy)																								 
 	{
 		m_strTag = tag;
 		m_nColor = color;
@@ -210,77 +209,20 @@ public:
 		if (m_nCurrent != str || m_strAttr != str_attr)
 		{
 			int l, t, r, b;
-			m_iFont.CalcRect(l, t, r, b, str.c_str());
-
-			m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC4);
-			m_iImage = cv::Mat::zeros(m_nRectHeight, r, CV_8UC4);
 			m_nCurrent = str;
 			m_nOffsetX = m_nRectWidth;
 			m_strAttr = str_attr;
-			uint32_t color = m_nColor;
-
-			bool attr_highlight = m_strAttr.find("H") != std::string::npos ? true : false;
-			bool attr_center = m_strAttr.find("C") != std::string::npos ? true : false;
-			if (1 < m_iDisp.GetBPP())
-			{
-				if (attr_highlight)
-				{
-					color = 0xffffffff; // ad-hoc
-				}
-				m_iFont.DrawTextBGRA(0, 0, str.c_str(), color, m_iImage.data, m_iImage.step, m_iImage.cols, m_iImage.rows);
-			}
-			else
-			{
-				cv::Mat gray = cv::Mat::zeros(m_iImage.rows, m_iImage.cols, CV_8UC1);
-
-				m_iFont.DrawTextGRAY(0, 0, str.c_str(), 255, gray.data, gray.step, gray.cols, gray.rows);
-
-				cv::threshold(gray, gray, 128, 255, CV_THRESH_BINARY);
-				cv::cvtColor(gray, m_iImage, CV_GRAY2BGRA);
-
-				if (attr_highlight)
-				{
-					cv::bitwise_not(m_iImage, m_iImage);
-				}
-			}
-
-			if (m_isRightAlign && (r < m_nRectWidth))
-			{
-				Draw(m_iAreaImage, m_iAreaImage.cols - r, 0, m_iImage);
-			}
-			else if (attr_center && (r < m_nRectWidth))
-			{
-				Draw(m_iAreaImage, m_iAreaImage.cols / 2 - r / 2, 0, m_iImage);
-			}
-			else
-			{
-				Draw(m_iAreaImage, 0, 0, m_iImage);
-			}
-
-			m_iDisp.WriteImageBGRA(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
+			m_iDisp.WriteString(m_nRectX,m_nRectY,m_nColor,m_nCurrent);
+			
 		}
 
-		if (m_nRectWidth < m_iImage.cols)
-		{
-			int x = m_nOffsetX;
 
-			x = 0 < x ? 0 : x;
-
-			m_nOffsetX -= (m_iDisp.GetSize().width + 239) / 240;
-			m_nOffsetX = -m_iImage.cols <= m_nOffsetX ? m_nOffsetX : m_nRectWidth;
-
-			m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC4);
-			Draw(m_iAreaImage, x, 0, m_iImage);
-			m_iDisp.WriteImageBGRA(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
-		}
 	}
 
 protected:
 	std::string m_strTag;
-	cv::Mat m_iImage;
 	int m_nOffsetX;
 	bool m_isRightAlign;
-	ImageFont m_iFont;
 	uint32_t m_nColor;
 	std::string m_strAttr;
 };
@@ -288,8 +230,7 @@ protected:
 class DrawArea_StaticText : public DrawAreaIF
 {
 public:
-	DrawArea_StaticText(const std::string &text, uint32_t color, DisplayIF &iDisplay, int x, int y, int cx, int cy, bool isRightAlign = false) : DrawAreaIF(iDisplay, x, y, cx, cy),
-																																																																							 m_iFont(FONT_PATH, m_nRectHeight)
+	DrawArea_StaticText(const std::string &text, uint32_t color, DisplayIF &iDisplay, int x, int y, int cx, int cy, bool isRightAlign = false) : DrawAreaIF(iDisplay, x, y, cx, cy)
 	{
 		m_strText = text;
 		m_nColor = color;
@@ -302,69 +243,24 @@ public:
 
 		if (m_nCurrent != str)
 		{
-			int l, t, r, b;
-			m_iFont.CalcRect(l, t, r, b, str.c_str());
-
-			m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC4);
-			m_iImage = cv::Mat::zeros(m_nRectHeight, r, CV_8UC4);
 			m_nCurrent = str;
-			m_nOffsetX = m_nRectWidth;
+			m_iDisp.WriteString(m_nRectX,m_nRectY,m_nColor,m_nCurrent);
 
-			if (1 < m_iDisp.GetBPP())
-			{
-				m_iFont.DrawTextBGRA(0, 0, str.c_str(), m_nColor, m_iImage.data, m_iImage.step, m_iImage.cols, m_iImage.rows);
-			}
-			else
-			{
-				cv::Mat gray = cv::Mat::zeros(m_iImage.rows, m_iImage.cols, CV_8UC1);
-
-				m_iFont.DrawTextGRAY(0, 0, str.c_str(), 255, gray.data, gray.step, gray.cols, gray.rows);
-
-				cv::threshold(gray, gray, 128, 255, CV_THRESH_BINARY);
-				cv::cvtColor(gray, m_iImage, CV_GRAY2BGRA);
-			}
-
-			if (m_isRightAlign && (r < m_nRectWidth))
-			{
-				Draw(m_iAreaImage, m_iAreaImage.cols - r, 0, m_iImage);
-			}
-			else
-			{
-				Draw(m_iAreaImage, 0, 0, m_iImage);
-			}
-
-			m_iDisp.WriteImageBGRA(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
 		}
 
-		if (m_nRectWidth < m_iImage.cols)
-		{
-			int x = m_nOffsetX;
-
-			x = 0 < x ? 0 : x;
-
-			m_nOffsetX -= (m_iDisp.GetSize().width + 239) / 240;
-			m_nOffsetX = -m_iImage.cols <= m_nOffsetX ? m_nOffsetX : m_nRectWidth;
-
-			m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC4);
-			Draw(m_iAreaImage, x, 0, m_iImage);
-			m_iDisp.WriteImageBGRA(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
-		}
 	}
 
 protected:
 	std::string m_strText;
-	cv::Mat m_iImage;
 	int m_nOffsetX;
 	bool m_isRightAlign;
-	ImageFont m_iFont;
 	uint32_t m_nColor;
 };
 
 class DrawArea_MyIpAddr : public DrawAreaIF
 {
 public:
-	DrawArea_MyIpAddr(uint32_t color, DisplayIF &iDisplay, int x, int y, int cx, int cy, bool isRightAlign = false) : DrawAreaIF(iDisplay, x, y, cx, cy),
-																																																										m_iFont(FONT_PATH, m_nRectHeight)
+	DrawArea_MyIpAddr(uint32_t color, DisplayIF &iDisplay, int x, int y, int cx, int cy, bool isRightAlign = false) : DrawAreaIF(iDisplay, x, y, cx, cy)
 	{
 		m_nColor = color;
 		m_isRightAlign = isRightAlign;
@@ -386,74 +282,27 @@ public:
 
 			if (m_strText == "127.0.0.1")
 			{
-				m_nColor = 0xFFFF8080;
+				m_nColor = 1;
 			}
 			else
 			{
-				m_nColor = 0xFFFFFFFF;
+				m_nColor = 2;
 			}
 		}
 
 		if (m_nCurrent != m_strText)
 		{
 			m_nCurrent = m_strText;
-
-			int l, t, r, b;
-			m_iFont.CalcRect(l, t, r, b, m_strText.c_str());
-
-			m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC4);
-			m_iImage = cv::Mat::zeros(m_nRectHeight, r, CV_8UC4);
-			m_nCurrent = m_strText;
-			m_nOffsetX = m_nRectWidth;
-
-			if (1 < m_iDisp.GetBPP())
-			{
-				m_iFont.DrawTextBGRA(0, 0, m_nCurrent.c_str(), m_nColor, m_iImage.data, m_iImage.step, m_iImage.cols, m_iImage.rows);
-			}
-			else
-			{
-				cv::Mat gray = cv::Mat::zeros(m_iImage.rows, m_iImage.cols, CV_8UC1);
-
-				m_iFont.DrawTextGRAY(0, 0, m_nCurrent.c_str(), 255, gray.data, gray.step, gray.cols, gray.rows);
-
-				cv::threshold(gray, gray, 128, 255, CV_THRESH_BINARY);
-				cv::cvtColor(gray, m_iImage, CV_GRAY2BGRA);
-			}
-
-			if (m_isRightAlign && (r < m_nRectWidth))
-			{
-				Draw(m_iAreaImage, m_iAreaImage.cols - r, 0, m_iImage);
-			}
-			else
-			{
-				Draw(m_iAreaImage, 0, 0, m_iImage);
-			}
-
-			m_iDisp.WriteImageBGRA(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
+			m_iDisp.WriteString(m_nRectX,m_nRectY,m_nColor,m_nCurrent);
 		}
 
-		if (m_nRectWidth < m_iImage.cols)
-		{
-			int x = m_nOffsetX;
-
-			x = 0 < x ? 0 : x;
-
-			m_nOffsetX -= (m_iDisp.GetSize().width + 239) / 240;
-			m_nOffsetX = -m_iImage.cols <= m_nOffsetX ? m_nOffsetX : m_nRectWidth;
-
-			m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC4);
-			Draw(m_iAreaImage, x, 0, m_iImage);
-			m_iDisp.WriteImageBGRA(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
-		}
 	}
 
 protected:
 	std::chrono::high_resolution_clock::time_point m_iLastChecked;
 	std::string m_strText;
-	cv::Mat m_iImage;
 	int m_nOffsetX;
 	bool m_isRightAlign;
-	ImageFont m_iFont;
 	uint32_t m_nColor;
 };
 
@@ -469,43 +318,11 @@ public:
 
 		float duration = itT != map.end() ? std::stof((*itT).second) : 1;
 		float elapsed = itE != map.end() ? std::stof((*itE).second) : 0;
+		m_iDisp.WriteString(m_nRectX,m_nRectY,2,(int)duration);
 
-		m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC4);
-
-		if (3 <= m_nRectHeight)
-		{
-			int w = (m_iAreaImage.cols - 2) * elapsed / duration;
-
-			cv::rectangle(
-					m_iAreaImage,
-					cv::Point2i(0, 0),
-					cv::Point2i(m_iAreaImage.cols - 1, m_iAreaImage.rows - 1),
-					cv::Scalar(128, 128, 128, 255),
-					1);
-
-			cv::rectangle(
-					m_iAreaImage,
-					cv::Point2i(1, 1),
-					cv::Point2i(1 + w, m_iAreaImage.rows - 2),
-					cv::Scalar(255, 255, 255, 255), // B,G,R,A
-					CV_FILLED);
-		}
-		else
-		{
-			int w = (m_iAreaImage.cols - 1) * elapsed / duration;
-
-			cv::rectangle(
-					m_iAreaImage,
-					cv::Point2i(0, 0),
-					cv::Point2i(w, m_iAreaImage.rows - 1),
-					cv::Scalar(255, 255, 255, 255), // B,G,R,A
-					CV_FILLED);
-		}
-
-		m_iDisp.WriteImageBGRA(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
 	}
 };
-
+/*
 class DrawArea_Marker : public DrawAreaIF
 {
 private:
@@ -547,94 +364,13 @@ protected:
 	std::string m_strTag;
 	int m_nDirection;
 };
+*/
 
-class DrawArea_CoverImage : public DrawAreaIF
-{
-private:
-	bool m_nBorder;
-	std::function<bool(std::vector<unsigned char>&, bool)> m_nfunc;
-public:
-	DrawArea_CoverImage(DisplayIF &iDisplay, int x, int y, int cx, int cy, std::function<bool(std::vector<unsigned char>&, bool)> func, bool border = true) :
-		DrawAreaIF(iDisplay, x, y, cx, cy), m_nfunc(func), m_nBorder(border){};
-
-	virtual void UpdateInfo(std::map<std::string, std::string> &map)
-	{
-		std::vector<unsigned char> data;
-		bool update = m_nfunc(data, m_nCurrent.empty() ? true : false );
-
-		if (update)
-		{
-			std::cout << "drawimage" << " : " << data.size() << std::endl;
-
-			// Create frame
-			cv::Mat image = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC4);
-			cv::Mat cover;
-
-			if (m_nBorder)
-			{
-				cv::rectangle(
-						image,
-						cv::Point2i(0, 0),
-						cv::Point2i(image.cols - 1, image.rows - 1),
-						cv::Scalar(255, 255, 255, 255),
-						1);
-			}
-			if (!data.empty()) {
-				try {
-					cover = cv::imdecode(data, cv::IMREAD_COLOR);
-				} catch (...) {
-					cover.release(); // FIXME
-				}
-			}
-
-			if (!cover.empty())
-			{
-				cv::cvtColor(cover, cover, cv::COLOR_BGR2BGRA);
-				if (m_nBorder)
-				{
-					cv::resize(cover, cover, cv::Size(image.cols - 2, image.rows - 2), 0, 0, cv::INTER_AREA);
-					cover.copyTo(image(cv::Rect(1, 1, cover.cols, cover.rows)));
-				}
-				else
-				{
-					cv::resize(cover, cover, cv::Size(image.cols, image.rows), 0, 0, cv::INTER_AREA);
-					cover.copyTo(image(cv::Rect(0, 0, cover.cols, cover.rows)));
-				}
-				m_nCurrent = "mark";
-			}
-			else
-			{
-				std::cout << "noimage" << std::endl;
-				const char *pszText = "NoImage";
-				int cx, cy, l, t, r, b;
-				ImageFont iFont(FONT_PATH, image.rows / 4);
-
-				iFont.CalcRect(l, t, r, b, pszText);
-				cx = r - l;
-				cy = b - t;
-
-				iFont.DrawTextBGRA(
-						(image.cols - cx) / 2 - l,
-						(image.rows - cy) / 2 - t,
-						pszText,
-						0xFFFFFFFF,
-						image.data,
-						image.step,
-						image.cols,
-						image.rows);
-				m_nCurrent = " ";
-			}
-
-			m_iDisp.WriteImageBGRA(m_nRectX, m_nRectY, image.data, image.step, image.cols, image.rows);
-		}
-	}
-};
 
 class DrawArea_CpuTemp : public DrawAreaIF
 {
 public:
-	DrawArea_CpuTemp(DisplayIF &iDisplay, int x, int y, int cx, int cy, bool isRightAlign = false) : DrawAreaIF(iDisplay, x, y, cx, cy),
-																																																	 m_iFont(FONT_PATH, m_nRectHeight)
+	DrawArea_CpuTemp(DisplayIF &iDisplay, int x, int y, int cx, int cy, bool isRightAlign = false) : DrawAreaIF(iDisplay, x, y, cx, cy)
 	{
 		m_isRightAlign = isRightAlign;
 	};
@@ -644,36 +380,20 @@ public:
 		int x = 0;
 		char buf[128];
 		float cpuTemp = std::stof(StringUtil::GetTextFromFile("/sys/class/thermal/thermal_zone0/temp")) / 1000.0f;
-
-		sprintf(buf, u8"cpu %.1f C", cpuTemp);
-
-		if (m_isRightAlign)
-		{
-			int l, t, r, b;
-			m_iFont.CalcRect(l, t, r, b, buf);
-
-			x = m_nRectWidth - r;
-		}
-
-		m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC1);
-		m_iFont.DrawTextGRAY(x, 0, buf, 255, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
-		m_iDisp.WriteImageGRAY(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
+		m_iDisp.WriteString(m_nRectX,m_nRectY,3,"hello");
 	}
 
 protected:
-	ImageFont m_iFont;
 	bool m_isRightAlign;
 };
 
 class DrawArea_Date : public DrawAreaIF
 {
 public:
-	DrawArea_Date(DisplayIF &iDisplay, int x, int y, int cx, int cy) : DrawAreaIF(iDisplay, x, y, cx, cy),
-																																		 m_iFont(FONT_DATE_PATH, m_nRectHeight, false)
+	DrawArea_Date(DisplayIF &iDisplay, int x, int y, int cx, int cy) : DrawAreaIF(iDisplay, x, y, cx, cy)
 	{
 		int l, t, r, b;
-		m_iFont.CalcRect(l, t, r, b, "0000/00/00");
-
+	
 		m_nOffsetX = 0; //(cx - (r-l) + 1) / 2 - l;
 		m_nOffsetY = (cy - (b - t) + 1) / 2 - t;
 	};
@@ -689,15 +409,13 @@ public:
 		if (m_nCurrent != buf)
 		{
 			m_nCurrent = buf;
+			m_iDisp.WriteString(m_nRectX,m_nRectY,3,m_nCurrent);
 
-			m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC1);
-			m_iFont.DrawTextGRAY(m_nOffsetX, m_nOffsetY, buf, 255, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
-			m_iDisp.WriteImageGRAY(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
 		}
 	}
 
 protected:
-	ImageFont m_iFont;
+	
 	int m_nOffsetX;
 	int m_nOffsetY;
 };
@@ -705,12 +423,9 @@ protected:
 class DrawArea_Time : public DrawAreaIF
 {
 public:
-	DrawArea_Time(DisplayIF &iDisplay, int x, int y, int cx, int cy) : DrawAreaIF(iDisplay, x, y, cx, cy),
-																																		 m_iFont(FONT_DATE_PATH, m_nRectHeight, false)
+	DrawArea_Time(DisplayIF &iDisplay, int x, int y, int cx, int cy) : DrawAreaIF(iDisplay, x, y, cx, cy)
 	{
 		int l, t, r, b;
-		m_iFont.CalcRect(l, t, r, b, "88:88");
-
 		m_nOffsetX = (cx - (r - l)) / 2 - l;
 		m_nOffsetY = (cy - (b - t)) / 2 - t;
 	};
@@ -729,15 +444,11 @@ public:
 		if (m_nCurrent != buf)
 		{
 			m_nCurrent = buf;
-
-			m_iAreaImage = cv::Mat::zeros(m_nRectHeight, m_nRectWidth, CV_8UC1);
-			m_iFont.DrawTextGRAY(m_nOffsetX, m_nOffsetY, buf, 255, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
-			m_iDisp.WriteImageGRAY(m_nRectX, m_nRectY, m_iAreaImage.data, m_iAreaImage.step, m_iAreaImage.cols, m_iAreaImage.rows);
+ 			m_iDisp.WriteString(m_nRectX,m_nRectY,3,m_nCurrent);
 		}
 	}
 
 protected:
-	ImageFont m_iFont;
 	int m_nOffsetX;
 	int m_nOffsetY;
 };
@@ -1104,12 +815,7 @@ protected:
 				iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx - 2 * x, med));
 				y += med + 2;
 
-				x = m * 2;
-				csz = cy - y - m * 2;
-				iDrawAreas.push_back(new DrawArea_CoverImage(*it, x, y, csz, csz, std::bind(&MpdGui::getImageData, this, std::placeholders::_1, std::placeholders::_2)));
-				x += csz + 8;
-
-
+				
 				iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, x, y + m, cx - x, med));
 				iDrawAreas.push_back(new DrawArea_STR("trackType", white, *it, x, cy - sml * 3 - med * 0 - m * 0, cx - x, sml));
 				iDrawAreas.push_back(new DrawArea_STR("pcmrate", white, *it, x, cy - sml * 2 - m * 0, cx - x, sml));
@@ -1130,9 +836,7 @@ protected:
 				y += 1 + 1;
 
 				csz = it->GetSize().height - y;
-				iDrawAreas.push_back(new DrawArea_CoverImage(*it, x, y, csz, csz, std::bind(&MpdGui::getImageData, this, std::placeholders::_1, std::placeholders::_2)));
-
-				x += csz + 4;
+				
 
 				iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx - x, med));
 				y += med;
@@ -1174,11 +878,7 @@ protected:
 			iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx - 2 * x, med, false));
 			y += med + 2;
 
-			x = m * 2;
-			csz = cy - y - m * 2;
-			iDrawAreas.push_back(new DrawArea_CoverImage(*it, x, y, csz, csz, std::bind(&MpdGui::getImageData, this, std::placeholders::_1, std::placeholders::_2)));
-			x += csz + 8;
-
+			
 
 			iDrawAreas.push_back(new DrawArea_STR("trackType", white, *it, x, cy - sml * 3 - med - m * 4, cx - x, med));
 			iDrawAreas.push_back(new DrawArea_STR("samplerate", white, *it, x, cy - sml * 3 - m * 3, cx - x, sml));
@@ -1207,10 +907,7 @@ protected:
 			y += sml + 2;
 
 //			csz = cy - y - 4 - med - 2 - sml;
-			csz = cx;
-			csz = csz < cx ? csz : cx;
-
-			iDrawAreas.push_back(new DrawArea_CoverImage(*it, (cx - csz) / 2, y, csz, csz, std::bind(&MpdGui::getImageData, this, std::placeholders::_1, std::placeholders::_2)));
+						
 //			y += csz + 4;
 //			iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, x, y, cx - 2 * x, med, false));
 //			y += med + 2;
@@ -1231,11 +928,7 @@ protected:
 			iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx - 2 * x, med, true));
 			y += med + 2;
 
-			csz = cy - y - 4 - med - 2 - sml;
-			csz = csz < cx ? csz : cx;
-
-			iDrawAreas.push_back(new DrawArea_CoverImage(*it, (cx - csz) / 2, y, csz, csz, std::bind(&MpdGui::getImageData, this, std::placeholders::_1, std::placeholders::_2)));
-			y += csz + 4;
+	
 			iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, x, y, cx - 2 * x, med, false));
 			y += med + 2;
 			iDrawAreas.push_back(new DrawArea_STR("audio", white, *it, x, cy - sml, cx - 2 * x, sml, true));
@@ -1365,8 +1058,8 @@ protected:
 			y += big + 2;
 			iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx - 2 * x, ind));
 			y += ind + 2;
-			iDrawAreas.push_back(new DrawArea_Marker("MarkerTop", *it, cx / 2 - mark_dx / 2, y, mark_dx, mark_dy, 0));
-			y += mark_dy;
+			//iDrawAreas.push_back(new DrawArea_Marker("MarkerTop", *it, cx / 2 - mark_dx / 2, y, mark_dx, mark_dy, 0));
+			//y += mark_dy;
 			menulinenums = (cy - y - mark_dy - 2) / (med + 1); // TODO Automatic calculation of the number of rows
 			for ( int i = 1; i <= menulinenums; i++) {
 				std::string menutag = "MenuList" + std::to_string(i);
@@ -1405,15 +1098,15 @@ protected:
 			y += big;
 			iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx - 2 * x, 1));
 			y += 3;
-			iDrawAreas.push_back(new DrawArea_Marker("MarkerTop", *it, cx / 2 - mark_dx / 2, y, mark_dx, mark_dy, 0));
-			y += mark_dy;
+			//iDrawAreas.push_back(new DrawArea_Marker("MarkerTop", *it, cx / 2 - mark_dx / 2, y, mark_dx, mark_dy, 0));
+			//y += mark_dy;
 			iDrawAreas.push_back(new DrawArea_STR("MenuList1", white, *it, x, y, cx - 2 * x, med, false));
 			y += med;
 			iDrawAreas.push_back(new DrawArea_STR("MenuList2", white, *it, x, y, cx - 2 * x, med, false));
 			y += med;
 			iDrawAreas.push_back(new DrawArea_STR("MenuList3", white, *it, x, y, cx - 2 * x, med, false));
 			y += med + 2;
-			iDrawAreas.push_back(new DrawArea_Marker("MarkerBottom", *it, cx / 2 - mark_dx / 2, y, mark_dx, mark_dy, 1));
+			//iDrawAreas.push_back(new DrawArea_Marker("MarkerBottom", *it, cx / 2 - mark_dx / 2, y, mark_dx, mark_dy, 1));
 			menulinenums = 3; // TODO Automatic calculation of the number of rows
 		}
 
@@ -1426,18 +1119,7 @@ protected:
 		int cx = it->GetSize().width;
 		int cy = it->GetSize().height;
 
-		if (cx == cy)
-		{
-			iDrawAreas.push_back(new DrawArea_CoverImage(*it, 0, 0, cx, cy, std::bind(&MpdGui::getImageData, this, std::placeholders::_1, std::placeholders::_2), false));
-		}
-		else if (cx > cy)
-		{
-			iDrawAreas.push_back(new DrawArea_CoverImage(*it, (cx - cy) / 2, 0, cy, cy, std::bind(&MpdGui::getImageData, this, std::placeholders::_1, std::placeholders::_2), false));
-		}
-		else
-		{
-			iDrawAreas.push_back(new DrawArea_CoverImage(*it, 0, (cy - cx) / 2, cx, cx, std::bind(&MpdGui::getImageData, this, std::placeholders::_1, std::placeholders::_2), false));
-		}
+		
 	}
 
 	void SetupButtons()

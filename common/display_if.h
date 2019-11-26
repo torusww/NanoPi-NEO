@@ -47,7 +47,7 @@ public:
 		return 0;
 	}
 
-	int WriteString( int x, int y, const string& str, int color ){
+	int WriteString( int x, int y,int color,const string& str){
 
 	}
 	

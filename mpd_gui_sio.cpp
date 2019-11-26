@@ -78,7 +78,7 @@ Volumio(Debian):
 #include <map>
 #include <string>
 #include <ctime>
-#include <opencv2/opencv.hpp>
+
 
 #include "common/perf_log.h"
 #include "common/img_font.h"
@@ -86,9 +86,6 @@ Volumio(Debian):
 #include "common/string_util.h"
 #include "common/ctrl_socket.h"
 #include "usr_displays.h"
-
-#define FONT_PATH "/usr/share/fonts/truetype/takao-gothic/TakaoPGothic.ttf"
-#define FONT_DATE_PATH "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"
 
 #define REFRESH_SONGINFO_TIME_MS	100
 #define REFRESH_IDLE_TIME_MS		250
@@ -100,56 +97,7 @@ Volumio(Debian):
 #endif
 
 
-void	Draw( cv::Mat& dst, int x, int y, cv::Mat& src )
-{
-	const uint8_t*	src_image	= src.data;
-	int				src_stride	= src.step;
-	uint8_t*		dst_image	= dst.data;
-	int				dst_stride	= dst.step;
-	
-	if( (src_image != NULL) && 
-		(dst_image != NULL) )
-	{
-		int				cx			= src.cols;
-		int				cy			= src.rows;
-	
-		if( x < 0 )
-		{
-			src_image   -= x * src.elemSize();
-			cx			+= x;
-			x			= 0;
-		}
-	
-		if( dst.cols < (x + cx) )
-		{
-			cx  = dst.cols - x;
-		}
-	
-		if( y < 0 )
-		{
-			src_image	-= y * src_stride;
-			cy			+= y;
-			y			= 0;
-		}
-	
-		if( dst.rows < (y + cy) )
-		{
-			cy  = dst.rows - y;
-		}
-	
-		if( (0 < cx) && (0 < cy) )
-		{
-			dst_image	+= y * dst_stride + x * dst.elemSize();
-			
-			for( int r = 0; r < cy; r++ )
-			{
-				memcpy( dst_image, src_image, cx * src.elemSize() );
-				src_image	+= src_stride;
-				dst_image	+= dst_stride;
-			}
-		}
-	}
-}
+
 
 class DrawAreaIF
 {
@@ -161,7 +109,6 @@ public:
 		m_nRectWidth = cx;
 		m_nRectHeight = cy;
 
-		m_iAreaImage = cv::Mat::zeros(cy, cx, CV_8UC1);
 	}
 
 	virtual void UpdateInfo(std::map<std::string, std::string> &map) = 0;
@@ -181,7 +128,6 @@ protected:
 	int m_nRectWidth;
 	int m_nRectHeight;
 	std::string m_nCurrent;
-	cv::Mat m_iAreaImage;
 };
 
 
@@ -968,24 +914,6 @@ protected:
 		int cx, cy;
 		int x, y, top;
 
-		{
-			ImageFont iFont(FONT_DATE_PATH, font_height, false);
-			int l, t, r, b;
-
-			iFont.CalcRect(l, t, r, b, "88:88");
-			cx = r - l;
-			cy = b - t;
-
-			if (it->GetSize().width < cx)
-			{
-				cy = it->GetSize().height * it->GetSize().width / cx;
-				cx = it->GetSize().width;
-				cy = cy * 7 / 8;
-				font_height = cy;
-			}
-
-			//		printf("%d x %d, %d\n", cx, cy, font_height );
-		}
 
 		// draw time
 		{

@@ -32,16 +32,27 @@ public:
 	DisplayIF(){};
 	virtual ~DisplayIF(){};
 	
-	virtual int Init() = 0;
-	virtual int DispClear()=0;
-	virtual int DispOn()=0;
-	virtual int DispOff()=0;
-	virtual int Quit()=0;
+	int Init(){
+		return 0；
+	}
+	int DispClear(){
+		return 0;
+	}
+	int DispOn(){
+		return 0;
+	}
+	int DispOff(){
+		return 0;
+	}
+	int Quit(){
+		return 0;
+	}
 
-	virtual	int WriteImageBGRA( int x, int y, const uint8_t* image, int stride, int cx, int cy )=0;
-	virtual	int WriteImageGRAY( int x, int y, const uint8_t* image, int stride, int cx, int cy )=0;
+	int WriteString( int x, int y, const string& str, int color ){
+
+	}
 	
-	virtual	void Flush()
+	void Flush()
 	{
 	}
 
@@ -53,48 +64,6 @@ public:
 	virtual	int			GetBPP()=0;
 
 protected:
-
-	template<class PIXEL_PTR>
-	static  PIXEL_PTR   GetLine( const uint8_t* base, int stride, int y )
-	{
-		return  (PIXEL_PTR)&base[stride * y];
-	}
-
-	bool    _CalcTransArea( int& x, int& y, const uint8_t* & image, int stride, int BytesPerPixel, int& cx, int& cy )
-	{
-		if( x < 0 )
-		{
-			image   -= x * BytesPerPixel;
-			cx      += x;
-			x       = 0;
-		}
-
-		if( m_tDispSize.width < (x + cx) )
-		{
-			cx  = m_tDispSize.width - x;
-		}
-
-		if( y < 0 )
-		{
-			image   -= y * stride;
-			cy      += y;
-			y       = 0;
-		}
-
-		if( m_tDispSize.height < (y + cy) )
-		{
-			cy  = m_tDispSize.height - y;
-		}
-
-		if( (cx <= 0) ||
-			(cy <= 0) )
-		{
-			printf("ERROR: DisplayIF::_NormalizeTransArea(), No trans area.\n");   
-			return  false;
-		}
-	  
-		return  true;
-	}
 
 
 protected:

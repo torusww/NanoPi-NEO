@@ -609,6 +609,7 @@ public:
 
 			if (m_eDisplayMode != ePrevDisplayMode)
 			{
+                std::cout << "DisplayMode="<<m_eDispplayMode<<std::endl;
 				for (auto it : m_iDisplays)
 				{
 					it->DispClear();

@@ -129,6 +129,7 @@ public:
 
 	bool    RegistPin( int pin, std::function<void(int)> func )
 	{
+		printf("registPin %d\n",pin);
 		if( 0 <= pin )
 		{
 			tagGpioCtrlInfo*	ptInfo	= NULL;

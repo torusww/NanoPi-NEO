@@ -265,7 +265,7 @@ public:
 
 		float duration = itT != map.end() ? std::stof((*itT).second) : 1;
 		float elapsed = itE != map.end() ? std::stof((*itE).second) : 0;
-		m_iDisp.WriteString(m_nRectX,m_nRectY,2,"duration");
+		m_iDisp.WriteString(m_nRectX,m_nRectY,2,std::to_string(duration));
 
 	}
 };
@@ -327,7 +327,7 @@ public:
 		int x = 0;
 		char buf[128];
 		float cpuTemp = std::stof(StringUtil::GetTextFromFile("/sys/class/thermal/thermal_zone0/temp")) / 1000.0f;
-		m_iDisp.WriteString(m_nRectX,m_nRectY,3,"cputemp");
+		m_iDisp.WriteString(m_nRectX,m_nRectY,3,std::to_string(cpuTemp));
 	}
 
 protected:
@@ -565,6 +565,7 @@ public:
 				m_eDisplayMode = DISPLAY_MODE_COVERART;
 			}
 
+/*
 			if (m_isVolumeCtrlMode)
 			{
 				m_eDisplayMode = DISPLAY_MODE_VOLUME;
@@ -573,6 +574,7 @@ public:
 				iInfo["volume"] = std::to_string(value);
 			}
 
+*/
 			if (!m_iMenuCtl->isMenuMode())
 			{
 				if (m_isButtonPlayPressed)
@@ -1130,6 +1132,8 @@ protected:
 					if (0 == value)
 					{
 						printf("OnButtonPlay_Up()\n");
+						std::cout<<"m_isButtonPlayPressed="<<m_isButtonPlayPressed<<" m_isPrevLcdSleep="<<m_isPrevLcdSleep<<" m_isCoverArt=" << m_isCoverArt<<std::endl;
+
 						if (m_isButtonPlayPressed)
 						{
 							m_isButtonPlayPressed = false;

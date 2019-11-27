@@ -45,32 +45,33 @@ Volumio(Debian):
 #include "MusicControllerVolumioSIO.hpp"
 #include "MenuController.hpp"
 
+#define GPIO_5BUTTON
 
 #ifndef GPIO_BUTTON_ROTATE
  #ifndef GPIO_BUTTON_PREV
-  #define GPIO_BUTTON_PREV 0
+  #define GPIO_BUTTON_PREV 203
  #endif
  #ifndef GPIO_BUTTON_NEXT
-  #define GPIO_BUTTON_NEXT 3
+  #define GPIO_BUTTON_NEXT 198
  #endif
  #ifndef GPIO_BUTTON_PLAY
-  #define GPIO_BUTTON_PLAY 2
+  #define GPIO_BUTTON_PLAY 6
  #endif
  #ifdef GPIO_5BUTTON // NasPi DAC LCD Panel compatible
   #ifndef GPIO_BUTTON_UP
-   #define GPIO_BUTTON_UP   203
+   #define GPIO_BUTTON_UP   201
   #endif
   #ifndef GPIO_BUTTON_DOWN
-   #define GPIO_BUTTON_DOWN 198
+   #define GPIO_BUTTON_DOWN 67
   #endif
  #endif
 #else
- #define GPIO_BUTTON_PREV 198
- #define GPIO_BUTTON_NEXT 203
- #define GPIO_BUTTON_PLAY 2
+ #define GPIO_BUTTON_PREV 203
+ #define GPIO_BUTTON_NEXT 198
+ #define GPIO_BUTTON_PLAY 6
  #ifdef GPIO_5BUTTON // NasPi DAC LCD Panel compatible
-  #define GPIO_BUTTON_UP   0
-  #define GPIO_BUTTON_DOWN 3
+  #define GPIO_BUTTON_UP   201
+  #define GPIO_BUTTON_DOWN 67
  #endif
 #endif
 
@@ -87,10 +88,10 @@ Volumio(Debian):
 #include "common/ctrl_socket.h"
 #include "usr_displays.h"
 
-#define REFRESH_SONGINFO_TIME_MS	100
-#define REFRESH_IDLE_TIME_MS		250
-#define REFRESH_MENU_TIME_MS		250
-#define REFRESH_VOLUME_TIME_MS		50
+#define REFRESH_SONGINFO_TIME_MS	1000
+#define REFRESH_IDLE_TIME_MS		2500
+#define REFRESH_MENU_TIME_MS		2500
+#define REFRESH_VOLUME_TIME_MS		1000
 
 #ifdef ENABLE_GETOPT
 #include <getopt.h>
@@ -609,7 +610,7 @@ public:
 
 			if (m_eDisplayMode != ePrevDisplayMode)
 			{
-                std::cout << "DisplayMode="<<m_eDispplayMode<<std::endl;
+                std::cout << "DisplayMode="<<m_eDisplayMode<<std::endl;
 				for (auto it : m_iDisplays)
 				{
 					it->DispClear();

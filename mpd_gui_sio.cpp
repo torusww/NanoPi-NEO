@@ -1,47 +1,4 @@
-/******************************************************************************
-	Copyright (C) 2017-2018 blue-7 (http://qiita.com/blue-7)
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-******************************************************************************/
-
-/*
-
-Required external packages and compile command:
-
-Volumio(Debian):
-	apt install libcv-dev libopencv-dev opencv-doc fonts-takao-gothic libtag1-dev libcurl4-openssl-dev libboost1.55-dev
-
-	git clone --recurse-submodules https://github.com/socketio/socket.io-client-cpp
-	cd socket.io-client-cpp
-	cmake -D CMAKE_CXX_FLAGS=-std=c++11 -DBOOST_INCLUDEDIR=/usr/include/boost/ -DBOOST_LIBRARYDIR=/usr/local/lib/ -DBOOST_VER:STRING=1.55 ./
-
-	cd ~/NanoPi-NEO
-	# for NanoHat OLED
-	make DISPTYPE=-DDISPLAY_NANOHATOLED TARGET=mpd_gui.cpp.o_nanohatoled
-	# for IPS 1.3" 240x240 LCD
-	make DISPTYPE=-DDISPLAY_13IPS240240 TARGET=mpd_gui.cpp.o_ips240240
-	# for NasPiDAC LCD
-	make DISPTYPE="-DDISPLAY_IPS320240 -DFEATURE_INA219 -DGPIO_5BUTTON" TARGET=mpd_gui.cpp.o_naspidac
-	# for NasPiDAC LCD without voltage detection
-	make DISPTYPE="-DDISPLAY_IPS320240 -DGPIO_5BUTTON" TARGET=mpd_gui.cpp.o_naspidac_novoldet
-
-
-*/
-
-///////////////////////////////
-//  Compile settings
-///////////////////////////////
 #include "MusicControllerVolumioSIO.hpp"
 #include "MenuController.hpp"
 
@@ -82,16 +39,15 @@ Volumio(Debian):
 
 
 #include "common/perf_log.h"
-#include "common/img_font.h"
 #include "common/ctrl_socket.h"
 #include "common/string_util.h"
 #include "common/ctrl_socket.h"
 #include "usr_displays.h"
 
-#define REFRESH_SONGINFO_TIME_MS	1000
-#define REFRESH_IDLE_TIME_MS		2500
-#define REFRESH_MENU_TIME_MS		2500
-#define REFRESH_VOLUME_TIME_MS		1000
+#define REFRESH_SONGINFO_TIME_MS	100
+#define REFRESH_IDLE_TIME_MS		250
+#define REFRESH_MENU_TIME_MS		250
+#define REFRESH_VOLUME_TIME_MS		50
 
 #ifdef ENABLE_GETOPT
 #include <getopt.h>
@@ -1056,6 +1012,7 @@ protected:
 
 	void SetupButtons()
 	{
+/*
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_PREV,
 				[&](int value) {
@@ -1161,7 +1118,6 @@ protected:
 						m_isButtonPlayPressed = true;
 					}
 				});
-#ifdef GPIO_5BUTTON
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_UP,
 				[&](int value) {
@@ -1192,6 +1148,7 @@ protected:
 						}
 					}
 				});
+*/
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_DOWN,
 				[&](int value) {
@@ -1222,7 +1179,6 @@ protected:
 						}
 					}
 				});
-#endif
 	}
 
 	enum DISPLAY_MODE

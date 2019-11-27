@@ -1,9 +1,4 @@
-DISPTYPE:= -DDISPLAY_13IPS240240
 CFLAGS:=
-CFLAGS+= $(DISPTYPE)
-CFLAGS+= -DDTBSELECTION -DDTBSELECTION_LIST=\"/boot/dac_dtbs.txt\" -DDTBSELECTION_COPYTO=\"sun50i-h5-nanopi-neo2.dtb\"
-CFLAGS+= -DGUISELECTION -DGUISELECTION_LIST=\"/boot/guilist.txt\"
-
 CPP=g++
 
 SIO_PATH=/home/volumio/socket.io-client-cpp/src/
@@ -11,12 +6,8 @@ SIO_PATH=/home/volumio/socket.io-client-cpp/src/
 CFLAGS+= -Ofast -mfpu=neon -pthread -std=c++11
 CFLAGS+= -DVOLUMIO=1 -DENABLE_GETOPT
 
-CFLAGS+=	`pkg-config --cflags opencv` \
-			`freetype-config --cflags` \
-			`taglib-config --cflags`
-LIBS+=		`pkg-config --libs opencv` \
-			`freetype-config --libs` \
-			`taglib-config --libs`
+CFLAGS+=	`taglib-config --cflags`
+LIBS+=		`taglib-config --libs`
 LIBS+= -lcurl -lboost_system -lpthread
 
 # socket.io-client-cpp

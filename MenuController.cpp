@@ -198,79 +198,6 @@ public:
 	}
 };
 
-#ifdef DTBSELECTION
-class MenuDTBSelection : public MenuList
-{
-private:
-	std::vector<std::string> dtblists;
-public:
-	MenuDTBSelection(const char* iName, MenuController &iCtl ) : MenuList(iName, iCtl)
-	{
-		std::ifstream rfs;
-		std::string rbuff;
-		rfs.open(DTBSELECTION_LIST, std::ios::in);
-		while (getline(rfs,rbuff)) {
-			std::string dtbname, dtbfile;
-			std::istringstream sep(rbuff);
-			getline(sep, dtbname, '\t');
-			if (dtbname[0] == '#') continue; // comment line
-			getline(sep, dtbfile, '\t');
-			if (!dtbname.empty() && !dtbfile.empty()){
-				menulists.push_back(dtbname);
-				dtblists.push_back(dtbfile);
-			}
-		}
-	}
-
-	MenuList *exec()
-	{
-		if (index < 0 || index >= menulists.size())
-		{
-			return nullptr;
-		}
-		std::string cmd = "cp /boot/" + dtblists[index] + " /boot/" + DTBSELECTION_COPYTO;
-		std::system(cmd.c_str());
-		return nullptr;
-	}
-};
-#endif
-
-#ifdef GUISELECTION
-class MenuGUISelection : public MenuList
-{
-private:
-	std::vector<std::string> guilists;
-public:
-	MenuGUISelection(const char* iName, MenuController &iCtl ) : MenuList(iName, iCtl)
-	{
-		std::ifstream rfs;
-		std::string rbuff;
-		rfs.open(GUISELECTION_LIST, std::ios::in);
-		while (getline(rfs,rbuff)) {
-			std::string guiname, guifile;
-			std::istringstream sep(rbuff);
-			getline(sep, guiname, '\t');
-			if (guiname[0] == '#') continue; // comment line
-			getline(sep, guifile, '\t');
-			if (!guiname.empty() && !guifile.empty()){
-				menulists.push_back(guiname);
-				guilists.push_back(guifile);
-			}
-		}
-	}
-
-	MenuList *exec()
-	{
-		if (index < 0 || index >= menulists.size())
-		{
-			return nullptr;
-		}
-		std::string cmd = "rm /boot/gui_*; touch /boot/gui_" + guilists[index];
-		std::system(cmd.c_str());
-		return nullptr;
-	}
-};
-#endif
 
 #define LCDSLEEPTIME_FILE "/boot/lcd_sleeptime"
 class MenuLCDSleepTime : public MenuList
@@ -336,20 +263,7 @@ public:
 		menulists.push_back("Restart Volumio");
 		menulists.push_back("Restart MPD");
 
-#if defined(DTBSELECTION) || defined(GUISELECTION)
-		struct stat buffer;
-#endif
 
-#ifdef DTBSELECTION
-		if (stat (DTBSELECTION_LIST, &buffer) == 0) {
-	  		addmenu(new MenuDTBSelection("Select DTB", m_iCtl));
-		}
-#endif
-#ifdef GUISELECTION
-		if (stat (GUISELECTION_LIST, &buffer) == 0) {
-			addmenu(new MenuGUISelection("Select GUI", m_iCtl));
-		}
-#endif
 		addmenu(new MenuLCDSleepTime("LCD Sleep Timer", m_iCtl));
 	}
 

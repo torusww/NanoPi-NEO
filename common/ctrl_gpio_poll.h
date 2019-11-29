@@ -170,6 +170,7 @@ public:
 						printf( "ERROR: GpioInterruptCtrl(), read(%s) failured.\n", (strPath+"value").c_str() );
 						return	false;	
 					}
+					printf("read pin %d\n",val);
 				}
 	
 				// allcoate
@@ -214,6 +215,7 @@ public:
 				std::lock_guard<std::mutex> lock(m_mtx);
 				ptInfo->prevValue = value - '0';
 				ptInfo->prevCnt = 0;
+				printf("read pin2 %d\n",value-'0');
 			}
 		}
 		

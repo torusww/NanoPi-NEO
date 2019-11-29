@@ -1,36 +1,11 @@
-
 #include "MusicControllerVolumioSIO.hpp"
 #include "MenuController.hpp"
 
-#define GPIO_5BUTTON
-
-#ifndef GPIO_BUTTON_ROTATE
- #ifndef GPIO_BUTTON_PREV
-  #define GPIO_BUTTON_PREV 203
- #endif
- #ifndef GPIO_BUTTON_NEXT
-  #define GPIO_BUTTON_NEXT 198
- #endif
- #ifndef GPIO_BUTTON_PLAY
-  #define GPIO_BUTTON_PLAY 6
- #endif
- #ifdef GPIO_5BUTTON // NasPi DAC LCD Panel compatible
-  #ifndef GPIO_BUTTON_UP
-   #define GPIO_BUTTON_UP   201
-  #endif
-  #ifndef GPIO_BUTTON_DOWN
-   #define GPIO_BUTTON_DOWN 67
-  #endif
- #endif
-#else
- #define GPIO_BUTTON_PREV 203
- #define GPIO_BUTTON_NEXT 198
- #define GPIO_BUTTON_PLAY 6
- #ifdef GPIO_5BUTTON // NasPi DAC LCD Panel compatible
-  #define GPIO_BUTTON_UP   201
-  #define GPIO_BUTTON_DOWN 67
- #endif
-#endif
+#define GPIO_BUTTON_PREV 203
+#define GPIO_BUTTON_NEXT 198
+#define GPIO_BUTTON_PLAY 6
+#define GPIO_BUTTON_UP   201
+#define GPIO_BUTTON_DOWN 67
 
 
 #include <map>
@@ -221,7 +196,7 @@ public:
 
 		float duration = itT != map.end() ? std::stof((*itT).second) : 1;
 		float elapsed = itE != map.end() ? std::stof((*itE).second) : 0;
-		m_iDisp.WriteString(m_nRectX,m_nRectY,2,std::to_string(duration));
+		m_iDisp.WriteString(m_nRectX,m_nRectY,2,std::to_string(elapsed));
 
 	}
 };
@@ -702,144 +677,27 @@ protected:
 		uint32_t white = 0xFFFFFFFF;
 		uint32_t blue = 0xFF0095D8;
 
-		if (cy < cx)
-		{
-			if (64 < cy)
-			{
-				int m = 2;
-				big = 36 * cy / 240;
-				med = 32 * cy / 240;
-				sml = 20 * cy / 240;
-				ind = 6 * cy / 240;
+		int m = 2;
+		big = 36 * cy / 240;
+		med = 32 * cy / 240;
+		sml = 20 * cy / 240;
+		ind = 6 * cy / 240;
 
-				x = m;
-				y = m;
-				iDrawAreas.push_back(new DrawArea_STR("Title", blue, *it, x, y, cx - 2 * x, big));
-				y += big + 2;
-				iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx - 2 * x, ind));
-				y += ind + 2;
-				iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx - 2 * x, med));
-				y += med + 2;
+		x = m;
+		y = m;
+		iDrawAreas.push_back(new DrawArea_STR("Title", blue, *it, 2, 2, cx - 2 * x, big));
+		y += big + 2;
+		iDrawAreas.push_back(new DrawArea_PlayPos(*it, 2, 22, cx - 2 * x, ind));
+		y += ind + 2;
+		iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, 2, 42, cx - 2 * x, med));
+		y += med + 2;
 
 				
-				iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, x, y + m, cx - x, med));
-				iDrawAreas.push_back(new DrawArea_STR("trackType", white, *it, x, cy - sml * 3 - med * 0 - m * 0, cx - x, sml));
-				iDrawAreas.push_back(new DrawArea_STR("pcmrate", white, *it, x, cy - sml * 2 - m * 0, cx - x, sml));
-				iDrawAreas.push_back(new DrawArea_CpuTemp(*it, x, cy - sml * 1- m * 0, cx - x, sml));
+		iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, 2, 62, cx - x, med));
+		iDrawAreas.push_back(new DrawArea_STR("trackType", white, *it, 2, 82, cx - x, sml));
+		iDrawAreas.push_back(new DrawArea_STR("pcmrate", white, *it, 2, 102, cx - x, sml));
+		iDrawAreas.push_back(new DrawArea_CpuTemp(*it, 2, 122, cx - x, sml));
 
-			}
-			else if (32 < cy)
-			{
-				big = 18 * cy / 64;
-				sml = 12 * cy / 64;
-				med = (cy - big - sml - 2) / 2;
-
-				x = 0;
-				y = 0;
-				iDrawAreas.push_back(new DrawArea_STR("Title", white, *it, x, y, cx, big));
-				y += big;
-				iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx, 1));
-				y += 1 + 1;
-
-				csz = it->GetSize().height - y;
-				
-
-				iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx - x, med));
-				y += med;
-				iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, x, y, cx - x, med));
-				y += med;
-				iDrawAreas.push_back(new DrawArea_STR("audio", white, *it, x, cy - sml, cx - x, sml));
-			}
-			else
-			{
-				big = 16 * cy / 32;
-				med = cy - big - 2;
-
-				x = 0;
-				y = 0;
-				iDrawAreas.push_back(new DrawArea_STR("Title", white, *it, x, y, cx, big));
-				y += big;
-				iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx, 1));
-				y += 1 + 1;
-				iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx, med));
-				y += med;
-			}
-		}
-		else if (cx == cy)
-		{
-			int m = 2;
-			big = 36 * cy / 240; // 48
-			med = 32 * cy / 240; // 36
-			sml = 20 * cy / 240;
-			ind = 6 * cy / 240;
-
-			x = m;
-			y = m;
-			iDrawAreas.push_back(new DrawArea_STR("Title", blue, *it, x, y, cx - 2 * x, big, false));
-			y += big + 2;
-			iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx - 2 * x, ind));
-			y += ind + 2;
-			iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, x, y, cx - 2 * x, med, false));
-			y += med + 2;
-			iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx - 2 * x, med, false));
-			y += med + 2;
-
-			
-
-			iDrawAreas.push_back(new DrawArea_STR("trackType", white, *it, x, cy - sml * 3 - med - m * 4, cx - x, med));
-			iDrawAreas.push_back(new DrawArea_STR("samplerate", white, *it, x, cy - sml * 3 - m * 3, cx - x, sml));
-			iDrawAreas.push_back(new DrawArea_STR("bitdepth", white, *it, x, cy - sml * 2 - m * 2, cx - x, sml));
-			iDrawAreas.push_back(new DrawArea_CpuTemp(*it, x, cy - sml - m, cx - x, sml));
-
-		}
-		else
-		{
-#if 1
-			int m = 2;
-			big = 30 * cy / 320;
-			med = 22 * cy / 320;
-			sml = 16 * cy / 320;
-			ind = 4 * cy / 320;
-
-			x = m;
-			y = 0;
-			iDrawAreas.push_back(new DrawArea_STR("Title", blue, *it, x, y, cx - 2 * x, big, false));
-			y += big + 2;
-			iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx - 2 * x, ind));
-			y += ind + 2;
-			iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx - 2 * x, med, true));
-			y += med + 2;
-			iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, x, y, cx - 2 * x, sml, true));
-			y += sml + 2;
-
-//			csz = cy - y - 4 - med - 2 - sml;
-						
-//			y += csz + 4;
-//			iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, x, y, cx - 2 * x, med, false));
-//			y += med + 2;
-//			iDrawAreas.push_back(new DrawArea_STR("audio", white, *it, x, cy - sml, cx - 2 * x, sml, true));
-#else
-			int m = 2;
-			big = 36 * cy / 320;
-			med = 28 * cy / 320;
-			sml = 24 * cy / 320;
-			ind = 4 * cy / 320;
-
-			x = m;
-			y = m;
-			iDrawAreas.push_back(new DrawArea_STR("Title", blue, *it, x, y, cx - 2 * x, big, false));
-			y += big + 2;
-			iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx - 2 * x, ind));
-			y += ind + 2;
-			iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, x, y, cx - 2 * x, med, true));
-			y += med + 2;
-
-	
-			iDrawAreas.push_back(new DrawArea_STR("Album", white, *it, x, y, cx - 2 * x, med, false));
-			y += med + 2;
-			iDrawAreas.push_back(new DrawArea_STR("audio", white, *it, x, cy - sml, cx - 2 * x, sml, true));
-#endif
-		}
 	}
 
 	void SetupLayout_Volume(std::vector<DrawAreaIF *> &iDrawAreas, DisplayIF *it)
@@ -880,7 +738,7 @@ protected:
 			x = (it->GetSize().width - cx) / 2;
 			y = (it->GetSize().height - cy) / 2;
 
-			iDrawAreas.push_back(new DrawArea_Time(*it, x, y, cx, cy));
+			iDrawAreas.push_back(new DrawArea_Time(*it, 2, 2, cx, cy));
 
 			top = y;
 			y += cy;
@@ -891,26 +749,26 @@ protected:
 		// draw date
 		cy = font_height * 4 / 10;
 		cy = cy < top ? cy : top;
-		iDrawAreas.push_back(new DrawArea_Date(*it, x, top - cy, it->GetSize().width - x, cy));
+		iDrawAreas.push_back(new DrawArea_Date(*it, 2, 22, it->GetSize().width - x, cy));
 
 		cy = font_height * 4 / 10;
 		cy = y + cy < it->GetSize().height ? cy : it->GetSize().height - y;
 		cy	= cy * 2 / 4;
 
 		// ip addr
-		iDrawAreas.push_back(new DrawArea_MyIpAddr(0xFFFFFFFF, *it, 0, y, it->GetSize().width - x, cy, true));
+		iDrawAreas.push_back(new DrawArea_MyIpAddr(0xFFFFFFFF, *it, 2, 42, it->GetSize().width - x, cy, true));
 		y += cy;
 
 		// cpu temp
-		iDrawAreas.push_back(new DrawArea_CpuTemp(*it, 0, y, it->GetSize().width - x, cy, true));
+		iDrawAreas.push_back(new DrawArea_CpuTemp(*it, 2, 62, it->GetSize().width - x, cy, true));
 		y += cy;
 
 
 
 		// Volumio Status
-		iDrawAreas.push_back(new DrawArea_STR("hostname" , 0xFFFFFFFF, *it, 0, it->GetSize().height - 16, it->GetSize().width / 2, cy));
+		iDrawAreas.push_back(new DrawArea_STR("hostname" , 0xFFFFFFFF, *it, 2, 82, it->GetSize().width / 2, cy));
 		x = it->GetSize().width / 2;
-		iDrawAreas.push_back(new DrawArea_STR("connected", 0xFFFFFFFF, *it, x, it->GetSize().height - 16, it->GetSize().width - x, cy, true));
+		iDrawAreas.push_back(new DrawArea_STR("connected", 0xFFFFFFFF, *it, 2, 102, it->GetSize().width - x, cy, true));
 	}
 
 	int SetupLayout_Menu(std::vector<DrawAreaIF *> &iDrawAreas, DisplayIF *it)
@@ -1012,7 +870,6 @@ protected:
 
 	void SetupButtons()
 	{
-/*
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_PREV,
 				[&](int value) {
@@ -1148,7 +1005,6 @@ protected:
 						}
 					}
 				});
-*/
 		m_iGpioIntCtrl.RegistPin(
 				GPIO_BUTTON_DOWN,
 				[&](int value) {
@@ -1213,10 +1069,8 @@ protected:
 	std::chrono::system_clock::time_point m_iButtonPrevPressedTime;
 	std::chrono::system_clock::time_point m_iButtonPlayPressedTime;
 
-#ifdef GPIO_5BUTTON
 	bool m_isButtonUpPressed;
 	bool m_isButtonDownPressed;
-#endif
 	// LCD Sleep
 	std::chrono::system_clock::time_point m_iPrevKeyPressTime;
 	bool m_isLcdSleep;

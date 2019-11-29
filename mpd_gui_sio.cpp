@@ -198,6 +198,7 @@ public:
 		float duration = itT != map.end() ? std::stof((*itT).second) : 1;
 		float elapsed = itE != map.end() ? std::stof((*itE).second) : 0;
 		m_iDisp.WriteString(m_nRectX,m_nRectY,2,std::to_string(elapsed));
+		m_iDisp.WritePos(m_nRectY,elapsed/duration);
 
 	}
 };

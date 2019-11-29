@@ -72,10 +72,15 @@ public:
 		return 0;
 	}
 
-	int WriteString( int x, int y,int color,const std::string& str){
+	void WriteString( int x, int y,int color,const std::string& str){
 		m_str+="DS16("+std::to_string(x)+","+std::to_string(y)+",'"+str+"',2);";
 		//std::cout << ">>>"<< x <<" "<< y<<" " << str <<std::endl;
-
+	}
+	void WritePos(int y,float pos){
+		int tp = pos*400;
+		int y6 = y+14;
+		mstr+="BOXF(0,"+y+","+tp+","+y6+",7);"
+		mstr+="BOXF("+tp+","+y+",399,"+y6+",8);"
 	}
 	
 	void Flush()

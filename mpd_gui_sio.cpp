@@ -1,4 +1,3 @@
-
 #include "MusicControllerVolumioSIO.hpp"
 #include "MenuController.hpp"
 
@@ -106,6 +105,58 @@ protected:
 	std::string m_strAttr;
 };
 
+class DrawArea_CSTR : public DrawAreaIF
+{
+public:
+	DrawArea_CSTR(const std::string &tag, uint32_t color, DisplayIF &iDisplay, int x, int y, int cx, int cy, bool isRightAlign = false) : DrawAreaIF(iDisplay, x, y, cx, cy)																								 
+	{
+		m_strTag = tag;
+		m_nColor = color;
+		m_isRightAlign = isRightAlign;
+		m_strAttr = "";
+	}
+
+	virtual void UpdateInfo(std::map<std::string, std::string> &map)
+	{
+		auto it = map.find(m_strTag);
+		std::string str = it != map.end() ? (*it).second : " ";
+		auto it_attr = map.find(m_strTag + "_attr");
+		std::string str_attr = it_attr != map.end() ? (*it_attr).second : "";
+
+		auto it2_attr = map.find("m_Index");
+		std::string str2_attr = it2_attr != map.end() ? (*it2_attr).second : "-1";
+		int index = std::stoi(str2_attr)+1;
+		//printf("index = %d\n",index);
+		std::string menuindex = "MenuList" + std::to_string(index);
+		uint32_t color;
+		if(m_strTag == menuindex)
+			color=3;
+		else color = 2;
+		//std::cout << "index = "<<index<<" menuindex="<<menuindex<<" m_str_Tag="<<m_strTag<<std::endl;
+
+		if (1)
+		//if (m_nCurrent != str || m_strAttr != str_attr || color != m_nColor)
+		{
+			int l, t, r, b;
+			m_nCurrent = str;
+			m_nOffsetX = m_nRectWidth;
+			m_strAttr = str_attr;
+			m_nColor = color;
+			m_iDisp.WriteString(m_nRectX,m_nRectY,m_nColor,m_nCurrent);
+			
+		}
+
+
+	}
+
+protected:
+	std::string m_strTag;
+	int m_nOffsetX;
+	bool m_isRightAlign;
+	uint32_t m_nColor;
+	std::string m_strAttr;
+};
+
 class DrawArea_StaticText : public DrawAreaIF
 {
 public:
@@ -197,7 +248,7 @@ public:
 
 		float duration = itT != map.end() ? std::stof((*itT).second) : 1;
 		float elapsed = itE != map.end() ? std::stof((*itE).second) : 0;
-		m_iDisp.WriteString(m_nRectX,m_nRectY,2,std::to_string(elapsed));
+		//m_iDisp.WriteString(m_nRectX,m_nRectY,2,std::to_string(elapsed));
 		m_iDisp.WritePos(m_nRectY,elapsed/duration);
 
 	}
@@ -625,6 +676,13 @@ public:
 			case DISPLAY_MODE_MENU:
 				if (m_iMenuCtl->isUpdateMenu()) {
 					m_iMenuCtl->getMenulists(iMenuInfo);
+					auto it2_attr = iMenuInfo.find("m_Index");
+					std::string str2_attr = it2_attr != iMenuInfo.end() ? (*it2_attr).second : "0";
+					std::cout << "m_index = "<< str2_attr<<std::endl;
+					for (auto it : m_iDisplays)
+					{
+						it->DispClear();
+					}
 				}
 				for (auto it : m_iDrawAreasMenu)
 				{
@@ -689,7 +747,7 @@ protected:
 		y = m;
 		iDrawAreas.push_back(new DrawArea_STR("Title", blue, *it, 2, 2, cx - 2 * x, big));
 		y += big + 2;
-		iDrawAreas.push_back(new DrawArea_PlayPos(*it, 2, 22, cx - 2 * x, ind));
+		iDrawAreas.push_back(new DrawArea_PlayPos(*it, 2, 204, cx - 2 * x, ind));
 		y += ind + 2;
 		iDrawAreas.push_back(new DrawArea_STR("Artist", white, *it, 2, 42, cx - 2 * x, med));
 		y += med + 2;
@@ -804,14 +862,14 @@ protected:
 			y = m;
 			iDrawAreas.push_back(new DrawArea_STR("MenuTitle", blue, *it, x, y, cx - 2 * x, big, false));
 			y += big + 2;
-			iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx - 2 * x, ind));
-			y += ind + 2;
+			//iDrawAreas.push_back(new DrawArea_PlayPos(*it, x, y, cx - 2 * x, ind));
+			//y += ind + 2;
 			//iDrawAreas.push_back(new DrawArea_Marker("MarkerTop", *it, cx / 2 - mark_dx / 2, y, mark_dx, mark_dy, 0));
 			//y += mark_dy;
 			menulinenums = (cy - y - mark_dy - 2) / (med + 1); // TODO Automatic calculation of the number of rows
 			for ( int i = 1; i <= menulinenums; i++) {
 				std::string menutag = "MenuList" + std::to_string(i);
-				iDrawAreas.push_back(new DrawArea_STR(menutag, white, *it, x, y, cx - 2 * x, med, false));
+				iDrawAreas.push_back(new DrawArea_CSTR(menutag, white, *it, x, y, cx - 2 * x, med, false));
 				y += med + 1;
 			}
 			#if 0

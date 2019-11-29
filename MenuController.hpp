@@ -75,6 +75,9 @@ public:
 		std::lock_guard<std::mutex> lock(m_mtx);
 		iLists.clear();
 		iLists = m_iMenulist;
+		int ind=0;
+		if(m_iCurrent) ind = m_iCurrent->index;
+		iLists["m_Index"]=std::to_string(ind);
 		m_isUpdateMenu = false;
 	}
 	int getIndex() { return m_Index; }

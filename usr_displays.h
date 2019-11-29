@@ -3,7 +3,8 @@
 #include <thread>
 #include "common/ctrl_spi.h"
 //#include "common/ctrl_gpio.h"
-#include "common/ctrl_gpio_poll.h"
+#include "common/ctrl_gpio_my.h"
+//#include "common/ctrl_gpio_poll.h"
 
 
 #include "common/display_if.h"	// Conflict to fbdev.h. Use exclusive.

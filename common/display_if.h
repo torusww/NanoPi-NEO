@@ -18,8 +18,8 @@ public:
 	public:
 		DispSize()
 		{
-			width	= 0;
-			height	= 0;
+			width	= 320;
+			height	= 240;
 		}
 
 		DispSize( int w, int h )

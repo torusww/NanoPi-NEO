@@ -111,9 +111,6 @@ public:
 	{
 		ThreadStop();
 
-		::close( m_epfd );
-		m_epfd	= -1;
-
 		for( auto& pin : m_iGpioInfo )
 		{
 			std::ofstream( "/sys/class/gpio/export" ) << std::to_string(pin.first);
@@ -194,7 +191,7 @@ public:
 				    ptInfo->prevCnt++;
 				    //if (ptInfo->prevCnt >= 2) {
 					ptInfo->prevValue = ptInfo->value;
-					it.second.func( ptInfo->value);
+					it.second.func( 1-ptInfo->value);
 				    //}
 			    }else{
 				    ptInfo->prevCnt = 0;

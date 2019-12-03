@@ -105,8 +105,8 @@ public:
 		return 0;
 	}
 
-	void WriteString( int x, int y,int color,const std::string& str){
-		m_str+="DS16("+std::to_string(x)+","+std::to_string(y)+",'"+str+"',"+std::to_string(color)+");";
+	void WriteString(const std::string& str){
+		m_str+=str;
 		//std::cout << ">>>"<< x <<" "<< y<<" " << str <<std::endl;
 	}
 	void WritePos(int y,float pos){

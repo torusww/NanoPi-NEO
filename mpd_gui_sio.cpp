@@ -90,8 +90,9 @@ public:
 			m_nCurrent = str;
 			m_nOffsetX = m_nRectWidth;
 			m_strAttr = str_attr;
-			m_iDisp.WriteString(m_nRectX,m_nRectY,m_nColor,m_nCurrent);
-			
+			std::string tmpstr="DS16("+std::to_string(m_nRectX)+","+std::to_string(m_nRectY)+",'"+m_nCurrent+"',"+std::to_string(m_nColor)+");";
+			m_iDisp.WriteString(tmpstr);
+
 		}
 
 
@@ -148,8 +149,9 @@ public:
 			m_nOffsetX = m_nRectWidth;
 			m_strAttr = str_attr;
 			m_nColor = color;
-			m_iDisp.WriteString(m_nRectX,m_nRectY,m_nColor,m_nCurrent);
-			
+			std::string tmpstr="DS16("+std::to_string(m_nRectX)+","+std::to_string(m_nRectY)+",'"+m_nCurrent+"',"+std::to_string(m_nColor)+");";
+			m_iDisp.WriteString(tmpstr);
+		
 		}
 
 
@@ -180,7 +182,8 @@ public:
 		if (m_nCurrent != str)
 		{
 			m_nCurrent = str;
-			m_iDisp.WriteString(m_nRectX,m_nRectY,m_nColor,m_nCurrent);
+			std::string tmpstr="DS16("+std::to_string(m_nRectX)+","+std::to_string(m_nRectY)+",'"+m_nCurrent+"',"+std::to_string(m_nColor)+");";
+			m_iDisp.WriteString(tmpstr);
 
 		}
 
@@ -229,7 +232,9 @@ public:
 		if (m_nCurrent != m_strText)
 		{
 			m_nCurrent = m_strText;
-			m_iDisp.WriteString(m_nRectX,m_nRectY,m_nColor,m_nCurrent);
+			std::string tmpstr="DS16("+std::to_string(m_nRectX)+","+std::to_string(m_nRectY)+",'"+m_nCurrent+"',"+std::to_string(m_nColor)+");";
+			m_iDisp.WriteString(tmpstr);
+
 		}
 
 	}
@@ -317,7 +322,9 @@ public:
 		int x = 0;
 		char buf[128];
 		float cpuTemp = std::stof(StringUtil::GetTextFromFile("/sys/class/thermal/thermal_zone0/temp")) / 1000.0f;
-		m_iDisp.WriteString(m_nRectX,m_nRectY,3,std::to_string(cpuTemp));
+		std::string tmpstr="DS16("+std::to_string(m_nRectX)+","+std::to_string(m_nRectY)+",'"+std::to_string(cpuTemp)+"',"+std::to_string(3)+");";
+		m_iDisp.WriteString(tmpstr);
+
 	}
 
 protected:
@@ -346,7 +353,9 @@ public:
 		if (m_nCurrent != buf)
 		{
 			m_nCurrent = buf;
-			m_iDisp.WriteString(m_nRectX,m_nRectY,3,m_nCurrent);
+			std::string tmpstr="DS16("+std::to_string(m_nRectX)+","+std::to_string(m_nRectY)+",'"+m_nCurrent+"',"+std::to_string(3)+");";
+			m_iDisp.WriteString(tmpstr);
+
 
 		}
 	}
@@ -381,7 +390,9 @@ public:
 		if (m_nCurrent != buf)
 		{
 			m_nCurrent = buf;
- 			m_iDisp.WriteString(m_nRectX,m_nRectY,3,m_nCurrent);
+			std::string tmpstr="DS16("+std::to_string(m_nRectX)+","+std::to_string(m_nRectY)+",'"+m_nCurrent+"',"+std::to_string(3)+");";
+			m_iDisp.WriteString(tmpstr);
+
 		}
 	}
 

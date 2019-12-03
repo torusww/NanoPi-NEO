@@ -9,6 +9,39 @@
 #include <stdio.h>
 #include <stdint.h>
 
+int code_convert(const char *from_charset, const char *to_charset, char *inbuf,
+                size_t inlen, char *outbuf, size_t outlen)
+{
+        iconv_t cd;
+        char **pin = &inbuf;
+        char **pout = &outbuf;
+
+        cd = iconv_open(to_charset, from_charset);
+        if (cd == 0)
+        {
+                std::cout<<"can't open iconv...........\n";
+                return -1;
+        }
+        memset(outbuf, 0, outlen);
+        if (iconv(cd, pin, &inlen, pout, &outlen) != 0)
+        {
+                std::cout<<"can't iconv...........\n";
+                return -1;
+        }
+        iconv_close(cd);
+        return 0;
+}
+
+int u2g(char *inbuf, int inlen, char *outbuf, int outlen)
+{
+        return code_convert("utf-8", "gb18030", inbuf, inlen, outbuf, outlen);
+}
+
+int g2u(char *inbuf, size_t inlen, char *outbuf, size_t outlen)
+{
+        return code_convert("gb2312", "utf-8", inbuf, inlen, outbuf, outlen);
+}
+
 
 class DisplayIF
 {
@@ -89,7 +122,13 @@ public:
 	{
 		if(m_str.size()>0){
 			m_str+="\r\n";
-			write(fd,m_str.c_str(),m_str.size());
+
+			char inbuff[4096];
+                        char strbuff[4096];
+                        strcpy(inbuff,m_str.c_str());
+                        u2g(inbuff,strlen(inbuff),strbuff,sizeof(strbuff));
+                        write(fd,strbuff,strlen(strbuff));
+			//write(fd,m_str.c_str(),m_str.size());
 			std::cout << m_str << std::endl;
 			m_str = "";
 		}

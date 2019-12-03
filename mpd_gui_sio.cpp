@@ -123,6 +123,7 @@ public:
 		auto it_attr = map.find(m_strTag + "_attr");
 		std::string str_attr = it_attr != map.end() ? (*it_attr).second : "";
 
+		/*
 		auto it2_attr = map.find("m_Index");
 		std::string str2_attr = it2_attr != map.end() ? (*it2_attr).second : "-1";
 		int index = std::stoi(str2_attr)+1;
@@ -133,6 +134,11 @@ public:
 			color=3;
 		else color = 2;
 		//std::cout << "index = "<<index<<" menuindex="<<menuindex<<" m_str_Tag="<<m_strTag<<std::endl;
+		*/
+
+		uint32_t color;
+		if(str_attr !="") color=3;
+		else color=2;
 
 		if (1)
 		//if (m_nCurrent != str || m_strAttr != str_attr || color != m_nColor)
@@ -734,8 +740,8 @@ protected:
 		int cx = it->GetSize().width;
 		int cy = it->GetSize().height;
 
-		uint32_t white = 0xFFFFFFFF;
-		uint32_t blue = 0xFF0095D8;
+		uint32_t white = 4;
+		uint32_t blue = 2;
 
 		int m = 2;
 		big = 36 * cy / 240;
@@ -816,7 +822,7 @@ protected:
 		cy	= cy * 2 / 4;
 
 		// ip addr
-		iDrawAreas.push_back(new DrawArea_MyIpAddr(0xFFFFFFFF, *it, 2, 42, it->GetSize().width - x, cy, true));
+		iDrawAreas.push_back(new DrawArea_MyIpAddr(2, *it, 2, 42, it->GetSize().width - x, cy, true));
 		y += cy;
 
 		// cpu temp
@@ -826,9 +832,9 @@ protected:
 
 
 		// Volumio Status
-		iDrawAreas.push_back(new DrawArea_STR("hostname" , 0xFFFFFFFF, *it, 2, 82, it->GetSize().width / 2, cy));
+		iDrawAreas.push_back(new DrawArea_STR("hostname" , 2, *it, 2, 82, it->GetSize().width / 2, cy));
 		x = it->GetSize().width / 2;
-		iDrawAreas.push_back(new DrawArea_STR("connected", 0xFFFFFFFF, *it, 2, 102, it->GetSize().width - x, cy, true));
+		iDrawAreas.push_back(new DrawArea_STR("connected", 2, *it, 2, 102, it->GetSize().width - x, cy, true));
 	}
 
 	int SetupLayout_Menu(std::vector<DrawAreaIF *> &iDrawAreas, DisplayIF *it)
